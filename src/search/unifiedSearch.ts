@@ -1,19 +1,15 @@
-import type { ExpenseSearchStats, SearchResult } from '../types'
+import type { SearchResult } from '../types'
 import {
   getAllArchiveItems,
+  getAllBodyPhotos,
   getAllBodyRecords,
-  getAllBpRecords,
   getAllBudgetSettings,
-  getAllExerciseRecords,
   getAllExpenses,
   getAllHabits,
-  getAllHospitalRecords,
-  getAllPeriodRecords,
-  getAllSleepRecords,
-  getAllSugarRecords,
 } from '../db'
-import { ARCHIVE_TYPE_LABELS, formatCurrency } from '../utils/dates'
-import { SEARCH_TYPE_LABELS, SUGAR_TIMING_LABELS } from '../config/sections'
+import { formatCurrency } from '../utils/dates'
+import { ARCHIVE_TYPE_LABELS } from '../utils/dates'
+import { SEARCH_TYPE_LABELS } from '../config/sections'
 
 function matches(q: string, ...fields: (string | undefined)[]) {
   return fields.some((f) => f?.toLowerCase().includes(q))
@@ -25,20 +21,12 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
 
   const results: SearchResult[] = []
 
-  const [
-    archives, expenses, budgetSettings, bodies, periods, bps, sugars, sleeps, hospitals,
-    exercises, habits,
-  ] = await Promise.all([
+  const [archives, expenses, budgetSettings, bodies, bodyPhotos, habits] = await Promise.all([
     getAllArchiveItems(),
     getAllExpenses(),
     getAllBudgetSettings(),
     getAllBodyRecords(),
-    getAllPeriodRecords(),
-    getAllBpRecords(),
-    getAllSugarRecords(),
-    getAllSleepRecords(),
-    getAllHospitalRecords(),
-    getAllExerciseRecords(),
+    getAllBodyPhotos(),
     getAllHabits(),
   ])
 
@@ -46,12 +34,12 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
     if (matches(q, item.title, item.memo, item.location, ...item.tags)) {
       results.push({
         id: item.id,
-        type: 'archive',
+        type: 'records',
         title: item.title,
         subtitle: ARCHIVE_TYPE_LABELS[item.type],
         date: item.date,
         snippet: item.memo ?? item.tags.map((t) => `#${t}`).join(' '),
-        path: '/archive',
+        path: '/records',
       })
     }
   }
@@ -65,7 +53,6 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
         title,
         subtitle: [e.categoryName, formatCurrency(e.amount)].filter(Boolean).join(' · '),
         date: e.date,
-        snippet: undefined,
         path: '/budget',
       })
     }
@@ -94,96 +81,34 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
   }
 
   for (const r of bodies) {
-    if (matches(q, r.memo, r.weight?.toString(), r.bodyFat?.toString())) {
+    if (
+      matches(
+        q,
+        r.weight?.toString(),
+        r.bodyFat?.toString(),
+        r.measurements?.waist?.toString(),
+        '체형',
+        '체중',
+      )
+    ) {
       results.push({
         id: r.id,
         type: 'body',
         title: r.weight ? `체중 ${r.weight}kg` : '체형 기록',
-        subtitle: r.inbody ? '인바디' : undefined,
         date: r.date,
-        snippet: r.memo,
-        path: '/mybody',
+        path: '/body',
       })
     }
   }
 
-  for (const p of periods) {
-    if (matches(q, p.memo, '생리')) {
+  for (const p of bodyPhotos) {
+    if (matches(q, '눈바디', '사진')) {
       results.push({
         id: p.id,
-        type: 'period',
-        title: '생리 기록',
-        date: p.startDate,
-        snippet: p.memo,
-        path: '/mybody',
-      })
-    }
-  }
-
-  for (const r of bps) {
-    if (matches(q, r.memo, `${r.systolic}/${r.diastolic}`, '혈압')) {
-      results.push({
-        id: r.id,
-        type: 'bp',
-        title: `혈압 ${r.systolic}/${r.diastolic}`,
-        date: r.date,
-        snippet: r.memo,
-        path: '/mybody',
-      })
-    }
-  }
-
-  for (const r of sugars) {
-    if (matches(q, r.memo, r.value.toString(), '혈당')) {
-      results.push({
-        id: r.id,
-        type: 'sugar',
-        title: `혈당 ${r.value}mg/dL`,
-        subtitle: r.timing ? SUGAR_TIMING_LABELS[r.timing] : undefined,
-        date: r.date,
-        snippet: r.memo,
-        path: '/mybody',
-      })
-    }
-  }
-
-  for (const r of sleeps) {
-    if (matches(q, r.memo, `${r.hours}시간`, '수면')) {
-      results.push({
-        id: r.id,
-        type: 'sleep',
-        title: `수면 ${r.hours}시간`,
-        date: r.date,
-        snippet: r.memo,
-        path: '/mybody',
-      })
-    }
-  }
-
-  for (const r of hospitals) {
-    if (matches(q, r.hospital, r.treatment, r.result, r.memo, '병원', '알러지')) {
-      results.push({
-        id: r.id,
-        type: 'hospital',
-        title: r.hospital,
-        subtitle: r.treatment,
-        date: r.date,
-        snippet: [r.result, r.memo].filter(Boolean).join(' · '),
-        path: '/mybody',
-      })
-    }
-  }
-
-  for (const r of exercises) {
-    if (matches(q, r.type, r.memo, '운동')) {
-      results.push({
-        id: r.id,
-        type: 'exercise',
-        title: r.type,
-        subtitle: r.duration ? `${r.duration}분` : undefined,
-        date: r.date,
-        snippet: r.memo,
-        path: '/fitness',
+        type: 'bodyPhoto',
+        title: '눈바디',
+        date: p.date,
+        path: '/body',
       })
     }
   }
@@ -208,7 +133,9 @@ function expenseMatches(q: string, e: { categoryName: string; subItem?: string; 
   return matches(q, e.categoryName, e.subItem, formatCurrency(e.amount))
 }
 
-export async function searchExpenseStats(query: string): Promise<ExpenseSearchStats | null> {
+export { SEARCH_TYPE_LABELS }
+
+export async function searchExpenseStats(query: string): Promise<import('../types').ExpenseSearchStats | null> {
   const q = query.toLowerCase().trim()
   if (!q) return null
 
@@ -234,5 +161,3 @@ export async function searchExpenseStats(query: string): Promise<ExpenseSearchSt
     byYear,
   }
 }
-
-export { SEARCH_TYPE_LABELS }

@@ -8,9 +8,8 @@ export interface DayBadge {
   date: string
   hasBudget?: boolean
   hasBody?: boolean
+  hasBodyPhoto?: boolean
   hasArchive?: boolean
-  hasFitness?: boolean
-  hasHealth?: boolean
   habitEmojis?: string[]
 }
 
@@ -106,11 +105,8 @@ export default function Calendar({
                   {badge.hasArchive && (
                     <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-archive'}`} />
                   )}
-                  {badge.hasFitness && (
-                    <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-success'}`} />
-                  )}
-                  {badge.hasHealth && (
-                    <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-habit-bad'}`} />
+                  {badge.hasBodyPhoto && (
+                    <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-accent'}`} />
                   )}
                   {badge.habitEmojis?.slice(0, 2).map((emoji, j) => (
                     <span key={j} className="text-[8px] leading-none">{emoji}</span>

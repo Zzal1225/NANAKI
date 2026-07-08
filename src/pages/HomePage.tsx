@@ -16,12 +16,11 @@ import {
   getDaySummary,
   getPeriodContext,
   getAllBodyRecords,
+  getAllBodyPhotos,
   getAllArchiveItems,
   getExpensesByMonth,
   getHabitLogsInRange,
   getAllHabits,
-  getAllExerciseRecords,
-  getAllHospitalRecords,
 } from '../db';
 
 type HomeView = 'calendar' | 'analytics';
@@ -34,19 +33,17 @@ async function loadMonthBadges(
   const [
     expenses,
     bodyRecords,
+    bodyPhotos,
     archiveItems,
     habitLogs,
     habits,
-    exercises,
-    hospitals,
   ] = await Promise.all([
     getExpensesByMonth(monthStr),
     getAllBodyRecords(),
+    getAllBodyPhotos(),
     getAllArchiveItems(),
     getHabitLogsInRange(`${monthStr}-01`, `${monthStr}-31`),
     getAllHabits(),
-    getAllExerciseRecords(),
-    getAllHospitalRecords(),
   ]);
 
   const habitMap = new Map(habits.map((h) => [h.id, h]));
@@ -63,14 +60,11 @@ async function loadMonthBadges(
   for (const r of bodyRecords) {
     if (r.date.startsWith(monthStr)) ensure(r.date).hasBody = true;
   }
+  for (const p of bodyPhotos) {
+    if (p.date.startsWith(monthStr)) ensure(p.date).hasBodyPhoto = true;
+  }
   for (const a of archiveItems) {
     if (a.date.startsWith(monthStr)) ensure(a.date).hasArchive = true;
-  }
-  for (const ex of exercises) {
-    if (ex.date.startsWith(monthStr)) ensure(ex.date).hasFitness = true;
-  }
-  for (const h of hospitals) {
-    if (h.date.startsWith(monthStr)) ensure(h.date).hasHealth = true;
   }
   for (const l of habitLogs) {
     if (l.completed) {

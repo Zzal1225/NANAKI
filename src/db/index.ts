@@ -1,8 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { addDays, format, parseISO, subDays } from 'date-fns'
 import { remapExpenseToCategories } from '../budget/categoryMatch'
-import type { AppSettings, ArchiveItem, BloodPressureRecord, BloodSugarRecord, BodyRecord, BudgetCategory, BudgetSettings, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, PeriodContext, PeriodRecord, SleepRecord } from '../types'
+import type { AppSettings, ArchiveItem, BodyPhotoRecord, BodyRecord, BudgetCategory, BudgetSettings, BloodPressureRecord, BloodSugarRecord, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, PeriodContext, PeriodRecord, SleepRecord } from '../types'
 import { DEFAULT_APP_SETTINGS } from '../config/sections'
+import { migrateAppSettings } from '../config/migrateSettings'
 import { ensureUserOwned, stampUserOwned, type UserOwnedInput } from './recordDefaults'
 import {
   appendRecurringExpenses,
@@ -28,6 +29,11 @@ interface NanakiDB extends DBSchema {
   bodyRecords: {
     key: string
     value: BodyRecord
+    indexes: { 'by-date': string }
+  }
+  bodyPhotos: {
+    key: string
+    value: BodyPhotoRecord
     indexes: { 'by-date': string }
   }
   archiveItems: {
@@ -88,7 +94,7 @@ interface NanakiDB extends DBSchema {
 
 const DB_NAME = 'nanaki-db'
 export { DB_NAME }
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 let dbPromise: Promise<IDBPDatabase<NanakiDB>> | null = null
 
@@ -176,6 +182,12 @@ export function getDB() {
             db.createObjectStore('syncConfig', { keyPath: 'id' })
           }
         }
+        if (oldVersion < 4) {
+          if (!db.objectStoreNames.contains('bodyPhotos')) {
+            const s = db.createObjectStore('bodyPhotos', { keyPath: 'id' })
+            s.createIndex('by-date', 'date')
+          }
+        }
       },
     })
   }
@@ -208,8 +220,15 @@ export function generateId() {
 // App Settings
 export async function getAppSettings(): Promise<AppSettings> {
   const db = await getDB()
-  const settings = await db.get('appSettings', 'app-settings')
-  return ensureUserOwned(settings ?? DEFAULT_APP_SETTINGS)
+  const raw = ensureUserOwned(await db.get('appSettings', 'app-settings') ?? DEFAULT_APP_SETTINGS)
+  const migrated = migrateAppSettings(raw)
+  if (
+    migrated.enabledTabs.join(',') !== raw.enabledTabs.join(',') ||
+    migrated.enabledSections.join(',') !== raw.enabledSections.join(',')
+  ) {
+    await db.put('appSettings', stampUserOwned(migrated))
+  }
+  return migrated
 }
 
 export async function saveAppSettings(settings: UserOwnedInput<AppSettings>) {
@@ -413,7 +432,37 @@ export async function deleteBodyRecord(id: string) {
   await deleteTracked('bodyRecords', 'bodyRecords', id)
 }
 
-// Health - Period
+// Body photos (눈바디)
+export async function getAllBodyPhotos() {
+  const db = await getDB()
+  const rows = await db.getAll('bodyPhotos')
+  return rows.map((row) => ensureUserOwned(row)).sort((a, b) => b.date.localeCompare(a.date))
+}
+
+export async function getBodyPhotosByDate(date: string) {
+  const db = await getDB()
+  const rows = await db.getAllFromIndex('bodyPhotos', 'by-date', date)
+  return rows.map((row) => ensureUserOwned(row))
+}
+
+export async function saveBodyPhoto(record: UserOwnedInput<BodyPhotoRecord>) {
+  const db = await getDB()
+  await db.put('bodyPhotos', stampUserOwned(record))
+}
+
+export async function deleteBodyPhoto(id: string) {
+  const db = await getDB()
+  await db.delete('bodyPhotos', id)
+}
+
+export async function getBodyPhotoObjectUrl(id: string): Promise<string | null> {
+  const db = await getDB()
+  const row = await db.get('bodyPhotos', id)
+  if (!row?.blob) return null
+  return URL.createObjectURL(row.blob)
+}
+
+// Health - Period (legacy import / backup only)
 export async function getAllPeriodRecords() {
   const db = await getDB()
   const records = await db.getAll('periodRecords')
@@ -625,22 +674,13 @@ export async function toggleHabitLog(habitId: string, date: string) {
 }
 
 export async function getDaySummary(date: string) {
-  const [
-    expenses, bodyRecords, archiveItems, habitLogs, habits,
-    periodRecords, bpRecords, sugarRecords, sleepRecords, hospitalRecords,
-    exercises,
-  ] = await Promise.all([
+  const [expenses, bodyRecords, bodyPhotos, archiveItems, habitLogs, habits] = await Promise.all([
     getExpensesByDate(date),
     getBodyRecordsByDate(date),
+    getBodyPhotosByDate(date),
     getArchiveItemsByDate(date),
     getHabitLogsByDate(date),
     getAllHabits(),
-    getAllPeriodRecords().then((all) => all.filter((p) => p.startDate <= date && (!p.endDate || p.endDate >= date))),
-    getBpRecordsByDate(date),
-    getSugarRecordsByDate(date),
-    getSleepRecordsByDate(date),
-    getHospitalRecordsByDate(date),
-    getExerciseRecordsByDate(date),
   ])
 
   const habitMap = new Map(habits.map((h) => [h.id, h]))
@@ -649,16 +689,11 @@ export async function getDaySummary(date: string) {
     date,
     expenses,
     bodyRecords,
+    bodyPhotos,
     archiveItems,
     habitLogs: habitLogs
       .filter((l) => l.completed)
       .map((l) => ({ ...l, habit: habitMap.get(l.habitId) })),
-    periodRecords,
-    bpRecords,
-    sugarRecords,
-    sleepRecords,
-    hospitalRecords,
-    exercises,
   }
 }
 
@@ -666,17 +701,14 @@ export async function getPeriodContext(centerDate: string, rangeDays = 7): Promi
   const startDate = format(subDays(parseISO(centerDate), rangeDays), 'yyyy-MM-dd')
   const endDate = format(addDays(parseISO(centerDate), rangeDays), 'yyyy-MM-dd')
 
-  const [bodyRecords, expenses, exercises, habitLogs, habits, hospitalRecords, sleepRecords, archiveItems] =
-    await Promise.all([
-      getBodyRecordsInRange(startDate, endDate),
-      getExpensesInRange(startDate, endDate),
-      getExerciseRecordsInRange(startDate, endDate),
-      getHabitLogsInRange(startDate, endDate),
-      getAllHabits(),
-      getAllHospitalRecords().then((all) => all.filter((r) => r.date >= startDate && r.date <= endDate)),
-      getAllSleepRecords().then((all) => all.filter((r) => r.date >= startDate && r.date <= endDate)),
-      getArchiveItemsInRange(startDate, endDate),
-    ])
+  const [bodyRecords, bodyPhotos, expenses, habitLogs, habits, archiveItems] = await Promise.all([
+    getBodyRecordsInRange(startDate, endDate),
+    getAllBodyPhotos().then((all) => all.filter((p) => p.date >= startDate && p.date <= endDate)),
+    getExpensesInRange(startDate, endDate),
+    getHabitLogsInRange(startDate, endDate),
+    getAllHabits(),
+    getArchiveItemsInRange(startDate, endDate),
+  ])
 
   const habitMap = new Map(habits.map((h) => [h.id, h]))
 
@@ -685,13 +717,11 @@ export async function getPeriodContext(centerDate: string, rangeDays = 7): Promi
     startDate,
     endDate,
     bodyRecords,
+    bodyPhotos,
     expenses,
-    exercises,
     habitLogs: habitLogs
       .filter((l) => l.completed)
       .map((l) => ({ ...l, habit: habitMap.get(l.habitId) })),
-    hospitalRecords,
-    sleepRecords,
     archiveItems,
   }
 }

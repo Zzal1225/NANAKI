@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Wallet, Heart, Dumbbell, Archive, CheckCircle2 } from 'lucide-react'
+import { Home, Wallet, User, BookMarked, CheckCircle2 } from 'lucide-react'
 import { useSections } from '../../context/SectionContext'
 import InstallPrompt from '../pwa/InstallPrompt'
 import type { TabId } from '../../types'
@@ -7,9 +7,8 @@ import type { TabId } from '../../types'
 const NAV_ITEMS: { to: string; tab: TabId; icon: typeof Home; label: string }[] = [
   { to: '/', tab: 'home', icon: Home, label: '홈' },
   { to: '/budget', tab: 'budget', icon: Wallet, label: '가계부' },
-  { to: '/mybody', tab: 'mybody', icon: Heart, label: '내몸' },
-  { to: '/fitness', tab: 'fitness', icon: Dumbbell, label: '운동' },
-  { to: '/archive', tab: 'archive', icon: Archive, label: '아카이브' },
+  { to: '/body', tab: 'body', icon: User, label: '체형' },
+  { to: '/records', tab: 'records', icon: BookMarked, label: '기록' },
   { to: '/habits', tab: 'habits', icon: CheckCircle2, label: '습관' },
 ]
 

@@ -1,4 +1,4 @@
-import { Dumbbell, Flame } from 'lucide-react'
+import { Scale, Flame } from 'lucide-react'
 import { Card } from '../common/Card'
 import ComparisonCards from './ComparisonCards'
 import BudgetOverview from '../budget/BudgetOverview'
@@ -117,11 +117,11 @@ export default function HomeAnalyticsView({ data, showComparison }: HomeAnalytic
       <div className="grid grid-cols-2 gap-3">
         <Card className="flex flex-col gap-2 bg-gradient-to-br from-surface-raised to-surface-overlay">
           <div className="flex items-center gap-2 text-text-muted">
-            <Dumbbell size={16} className="text-accent" />
-            <span className="text-xs">30일 운동</span>
+            <Scale size={16} className="text-body" />
+            <span className="text-xs">30일 체형 기록</span>
           </div>
-          <span className="text-2xl font-bold tabular-nums">{data.exerciseCount}회</span>
-          <span className="text-xs text-text-muted">{data.exerciseMinutes}분 기록</span>
+          <span className="text-2xl font-bold tabular-nums">{data.bodyRecordCount}회</span>
+          <span className="text-xs text-text-muted">체중 · 둘레</span>
         </Card>
         <Card className="flex flex-col gap-2 bg-gradient-to-br from-surface-raised to-surface-overlay">
           <div className="flex items-center gap-2 text-text-muted">

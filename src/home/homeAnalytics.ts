@@ -4,7 +4,6 @@ import { ensureBudgetSettingsForMonth } from '../budget/monthSettings'
 import { sumExpensesInRange } from '../budget/spendingStats'
 import {
   getAllBodyRecords,
-  getAllExerciseRecords,
   getAllExpenses,
   getAllHabits,
   getExpensesInRange,
@@ -28,8 +27,7 @@ export interface HomeAnalyticsData {
   }
   dailySpending: { date: string; label: string; amount: number }[]
   monthLabel: string
-  exerciseCount: number
-  exerciseMinutes: number
+  bodyRecordCount: number
   topCategories: { name: string; amount: number }[]
 }
 
@@ -49,14 +47,13 @@ export async function loadHomeAnalytics(): Promise<HomeAnalyticsData> {
   const start60 = format(subDays(new Date(today), 59), 'yyyy-MM-dd')
   const endPast30 = format(subDays(new Date(today), 30), 'yyyy-MM-dd')
 
-  const [expenses, bodies, habits, logsCurrent, logsPast, exercises, monthExpenses, settings] =
+  const [expenses, bodies, habits, logsCurrent, logsPast, monthExpenses, settings] =
     await Promise.all([
       getAllExpenses(),
       getAllBodyRecords(),
       getAllHabits(),
       getHabitLogsInRange(start30, today),
       getHabitLogsInRange(start60, endPast30),
-      getAllExerciseRecords(),
       getExpensesInRange(`${currentMonth()}-01`, today),
       ensureBudgetSettingsForMonth(currentMonth()),
     ])
@@ -89,7 +86,7 @@ export async function loadHomeAnalytics(): Promise<HomeAnalyticsData> {
     }
   })
 
-  const recentExercises = exercises.filter((e) => e.date >= start30 && e.date <= today)
+  const bodyRecordCount = bodies.filter((r) => r.date >= start30 && r.date <= today).length
 
   return {
     comparison: {
@@ -115,8 +112,7 @@ export async function loadHomeAnalytics(): Promise<HomeAnalyticsData> {
     },
     dailySpending,
     monthLabel: format(new Date(today), 'yyyy년 M월'),
-    exerciseCount: recentExercises.length,
-    exerciseMinutes: recentExercises.reduce((s, e) => s + (e.duration ?? 0), 0),
+    bodyRecordCount,
     topCategories,
   }
 }

@@ -28,7 +28,7 @@ export default function ArchivePage() {
 
   useEffect(() => {
     const load = async () => {
-      const useLocalSearch = !isSectionEnabled('archive-search') && query.trim()
+      const useLocalSearch = !isSectionEnabled('records-search') && query.trim()
       let result = useLocalSearch
         ? await searchArchiveItems(query)
         : allItems ?? []
@@ -45,9 +45,9 @@ export default function ArchivePage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="아카이브"
-        subtitle="제품 · 장소 · 시술 — 찾기가 핵심"
-        tab="archive"
+        title="기록"
+        subtitle="개인 검색 · 기록 보관"
+        tab="records"
         actions={
           <button
             onClick={() => setShowModal(true)}
@@ -58,13 +58,13 @@ export default function ArchivePage() {
         }
       />
 
-      {isSectionEnabled('archive-search') && (
+      {isSectionEnabled('records-search') && (
         <GlobalSearch placeholder="아카이브 검색 — '그 소스 먹어봤는데...'" />
       )}
 
-      {isSectionEnabled('archive-list') && (
+      {isSectionEnabled('records-list') && (
       <>
-      {!isSectionEnabled('archive-search') && (
+      {!isSectionEnabled('records-search') && (
       <SearchBar
         value={query}
         onChange={setQuery}

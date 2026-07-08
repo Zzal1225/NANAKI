@@ -4,9 +4,8 @@ import { LOCAL_USER_ID } from './user'
 export const ALL_TABS: { id: TabId; label: string; path: string; alwaysOn?: boolean }[] = [
   { id: 'home', label: '홈', path: '/', alwaysOn: true },
   { id: 'budget', label: '가계부', path: '/budget' },
-  { id: 'mybody', label: '내몸', path: '/mybody' },
-  { id: 'fitness', label: '운동', path: '/fitness' },
-  { id: 'archive', label: '아카이브', path: '/archive' },
+  { id: 'body', label: '체형', path: '/body' },
+  { id: 'records', label: '기록', path: '/records' },
   { id: 'habits', label: '습관', path: '/habits' },
 ]
 
@@ -19,17 +18,12 @@ export const ALL_SECTIONS: SectionMeta[] = [
   { id: 'budget-summary', label: '예산 요약', tab: 'budget', group: '가계부', defaultEnabled: true },
   { id: 'budget-categories', label: '카테고리별 예산', tab: 'budget', group: '가계부', defaultEnabled: true },
 
-  { id: 'body-shape', label: '체형관리', tab: 'mybody', group: '내몸', defaultEnabled: true },
-  { id: 'health-period', label: '생리 기록', tab: 'mybody', group: '건강관리', defaultEnabled: true },
-  { id: 'health-bp', label: '혈압', tab: 'mybody', group: '건강관리', defaultEnabled: true },
-  { id: 'health-sugar', label: '혈당', tab: 'mybody', group: '건강관리', defaultEnabled: true },
-  { id: 'health-sleep', label: '수면', tab: 'mybody', group: '건강관리', defaultEnabled: true },
-  { id: 'health-hospital', label: '병원 방문', tab: 'mybody', group: '건강관리', defaultEnabled: true },
+  { id: 'body-metrics', label: '체중 · 둘레', tab: 'body', group: '체형', defaultEnabled: true },
+  { id: 'body-photo', label: '눈바디', tab: 'body', group: '체형', defaultEnabled: true },
+  { id: 'body-intervals', label: '측정 주기', tab: 'body', group: '체형', defaultEnabled: true },
 
-  { id: 'fitness-exercise', label: '운동', tab: 'fitness', defaultEnabled: true },
-
-  { id: 'archive-search', label: '검색', tab: 'archive', defaultEnabled: true },
-  { id: 'archive-list', label: '기록 목록', tab: 'archive', defaultEnabled: true },
+  { id: 'records-search', label: '검색', tab: 'records', defaultEnabled: true },
+  { id: 'records-list', label: '기록 목록', tab: 'records', defaultEnabled: true },
 
   { id: 'habits-checklist', label: '습관 체크', tab: 'habits', defaultEnabled: true },
 ]
@@ -50,21 +44,9 @@ export function getSectionsForTab(tab: TabId): SectionMeta[] {
 }
 
 export const SEARCH_TYPE_LABELS: Record<string, string> = {
-  archive: '아카이브',
+  records: '기록',
   expense: '가계부',
   body: '체형',
-  period: '생리',
-  bp: '혈압',
-  sugar: '혈당',
-  sleep: '수면',
-  hospital: '병원',
-  exercise: '운동',
+  bodyPhoto: '눈바디',
   habit: '습관',
-}
-
-export const SUGAR_TIMING_LABELS: Record<string, string> = {
-  fasting: '공복',
-  after_meal: '식후',
-  before_sleep: '취침 전',
-  other: '기타',
 }

@@ -77,6 +77,33 @@ export interface BodyMeasurements {
   calf?: number
 }
 
+export interface BodyRecord extends UserOwned {
+  id: string
+  date: string
+  weight?: number
+  bodyFat?: number
+  measurements?: BodyMeasurements
+}
+
+/** 눈바디 — 사진만 (Blob은 IndexedDB 전용, JSON 백업 제외) */
+export interface BodyPhotoRecord extends UserOwned {
+  id: string
+  date: string
+  mimeType: 'image/jpeg'
+  blob: Blob
+}
+
+export type BodyMetricKey =
+  | 'weight'
+  | 'bodyFat'
+  | 'waist'
+  | 'hip'
+  | 'chest'
+  | 'arm'
+  | 'thigh'
+  | 'calf'
+
+/** @deprecated CSV/레거시 import 호환용 — UI 미사용 */
 export interface InBodyResult {
   skeletalMuscle?: number
   bodyFatMass?: number
@@ -86,13 +113,9 @@ export interface InBodyResult {
   bodyFatPercent?: number
 }
 
-export interface BodyRecord extends UserOwned {
-  id: string
-  date: string
-  weight?: number
-  bodyFat?: number
+/** @deprecated 레거시 import 호환 */
+export interface LegacyBodyRecord extends BodyRecord {
   muscle?: number
-  measurements?: BodyMeasurements
   inbody?: InBodyResult
   memo?: string
 }
@@ -186,14 +209,9 @@ export interface DaySummary {
   date: string
   expenses: Expense[]
   bodyRecords: BodyRecord[]
+  bodyPhotos: BodyPhotoRecord[]
   archiveItems: ArchiveItem[]
   habitLogs: (HabitLog & { habit?: Habit })[]
-  periodRecords: PeriodRecord[]
-  bpRecords: BloodPressureRecord[]
-  sugarRecords: BloodSugarRecord[]
-  sleepRecords: SleepRecord[]
-  hospitalRecords: HospitalRecord[]
-  exercises: ExerciseRecord[]
 }
 
 export interface PeriodContext {
@@ -201,25 +219,13 @@ export interface PeriodContext {
   startDate: string
   endDate: string
   bodyRecords: BodyRecord[]
+  bodyPhotos: BodyPhotoRecord[]
   expenses: Expense[]
-  exercises: ExerciseRecord[]
   habitLogs: (HabitLog & { habit?: Habit })[]
-  hospitalRecords: HospitalRecord[]
-  sleepRecords: SleepRecord[]
   archiveItems: ArchiveItem[]
 }
 
-export type SearchResultType =
-  | 'archive'
-  | 'expense'
-  | 'body'
-  | 'period'
-  | 'bp'
-  | 'sugar'
-  | 'sleep'
-  | 'hospital'
-  | 'exercise'
-  | 'habit'
+export type SearchResultType = 'records' | 'expense' | 'body' | 'bodyPhoto' | 'habit'
 
 export interface ExpenseSearchStats {
   query: string
@@ -238,20 +244,16 @@ export interface SearchResult {
   path: string
 }
 
-export type TabId = 'home' | 'budget' | 'mybody' | 'fitness' | 'archive' | 'habits'
+export type TabId = 'home' | 'budget' | 'body' | 'records' | 'habits'
 
 export type SectionId =
   | 'budget-summary'
   | 'budget-categories'
-  | 'body-shape'
-  | 'health-period'
-  | 'health-bp'
-  | 'health-sugar'
-  | 'health-sleep'
-  | 'health-hospital'
-  | 'fitness-exercise'
-  | 'archive-search'
-  | 'archive-list'
+  | 'body-metrics'
+  | 'body-photo'
+  | 'body-intervals'
+  | 'records-search'
+  | 'records-list'
   | 'habits-checklist'
   | 'home-comparison'
   | 'home-calendar'
@@ -266,6 +268,8 @@ export interface AppSettings extends UserOwned {
   schemaVersion?: number
   /** 모든 달에 공유되는 가계부 카테고리 */
   budgetCategories?: BudgetCategory[]
+  /** 체형 항목별 측정 주기(일) */
+  bodyMeasurementIntervals?: Partial<Record<BodyMetricKey, number>>
   /** @deprecated budgetCategories로 마이그레이션 */
   fixedCategories?: BudgetCategory[]
 }

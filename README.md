@@ -1,13 +1,13 @@
 # Nanaki
 
-개인용 PWA — 가계부, 내몸, 운동, 아카이브, 습관.
+기억을 기록하고, 언제든 다시 찾는 검색 중심 개인 라이프 로그 PWA
 
 ## URL 구분 (중요)
 
-| 명령 | URL | 용도 | 데이터 |
-|------|-----|------|--------|
-| `npm run dev` | http://localhost:5173 | UI 개발·수정 | **5173 전용** (PWA 설치 불가) |
-| `npm run pwa` | http://localhost:4173 | **설치·실사용** | **4173 / 설치 앱 전용** |
+| 명령          | URL                   | 용도            | 데이터                        |
+| ------------- | --------------------- | --------------- | ----------------------------- |
+| `npm run dev` | http://localhost:5173 | UI 개발·수정    | **5173 전용** (PWA 설치 불가) |
+| `npm run pwa` | http://localhost:4173 | **설치·실사용** | **4173 / 설치 앱 전용**       |
 
 **5173과 4173은 저장소가 완전히 다릅니다.** 실제 기록은 4173에서 설치한 앱으로만 사용하세요.
 
@@ -40,14 +40,14 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 
 ## 기능 · 진행
 
-| 탭 | 내용 | MVP |
-|----|------|-----|
+| 탭          | 내용                            | MVP |
+| ----------- | ------------------------------- | --- |
 | 가계부 | 카테고리별 예산, 고정/변동 지출 | ✅ |
-| 내몸 · 건강 | 체형 + 건강 기록 | 🔜 |
-| 운동 | 운동 기록 | 🔜 |
-| 아카이브 | 제품·장소·시술 | 🔜 |
-| 습관 | 일일 체크 | 🔜 |
-| 홈 | 캘린더, 30일 비교, 통합 검색 | 🔜 |
+| 체형 | 체중 · 둘레 · 측정주기 · 눈바디 | ✅ |
+| 기록 | 개인 검색 · 기록 보관 | 🔜 |
+| 운동 | *(기록 > 활동으로 통합 예정)* | — |
+| 습관        | 일일 체크                       | 🔜  |
+| 홈          | 캘린더, 30일 비교, 통합 검색    | 🔜  |
 
 로드맵: [docs/ROADMAP.md](docs/ROADMAP.md)
 
@@ -124,20 +124,20 @@ React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-p
 
 `main` 브랜치만 사용. 커밋 형식은 `{타입}: {설명}` (한국어).
 
-| 타입 | 용도 |
-|------|------|
-| `feat` | 새 기능 추가 |
-| `fix` | 버그 수정 |
+| 타입       | 용도                            |
+| ---------- | ------------------------------- |
+| `feat`     | 새 기능 추가                    |
+| `fix`      | 버그 수정                       |
 | `refactor` | 코드 구조 개선 (동작 변화 없음) |
-| `style` | UI 스타일만 변경 |
-| `docs` | 문서 수정 |
+| `style`    | UI 스타일만 변경                |
+| `docs`     | 문서 수정                       |
 
 자세히: [docs/ROADMAP.md — Git](docs/ROADMAP.md#git)
 
 ## 문서
 
-| 문서 | 내용 |
-|------|------|
-| [docs/ROADMAP.md](docs/ROADMAP.md) | 개발 순서 · Phase 체크리스트 |
-| [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) | IndexedDB · UserOwned · 가계부 구조 |
-| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | 디자인 토큰 · UI 패턴 |
+| 문서                                           | 내용                                |
+| ---------------------------------------------- | ----------------------------------- |
+| [docs/ROADMAP.md](docs/ROADMAP.md)             | 개발 순서 · Phase 체크리스트        |
+| [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)     | IndexedDB · UserOwned · 가계부 구조 |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | 디자인 토큰 · UI 패턴               |

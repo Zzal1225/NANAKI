@@ -102,8 +102,7 @@ function payloadToCsvRows(data: NanakiDataPayload): (string | number)[][] {
       r.date,
       r.weight ?? '',
       r.bodyFat ?? '',
-      r.muscle ?? '',
-      r.memo ?? '',
+      '',
       '',
       JSON.stringify(r),
     ])
@@ -396,8 +395,6 @@ function rowsToPayload(rows: string[][]): NanakiDataPayload {
               date: row[2] ?? '',
               weight: row[3] ? Number(row[3]) : undefined,
               bodyFat: row[4] ? Number(row[4]) : undefined,
-              muscle: row[5] ? Number(row[5]) : undefined,
-              memo: row[6] || undefined,
             },
           ),
         )
