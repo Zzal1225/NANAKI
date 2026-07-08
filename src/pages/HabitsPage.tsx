@@ -47,7 +47,6 @@ export default function HabitsPage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="습관"
-        subtitle="매일 체크 · 캘린더에 표시"
         tab="habits"
         actions={
           <button

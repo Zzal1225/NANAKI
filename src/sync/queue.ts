@@ -2,11 +2,11 @@ import type { SyncConfig, SyncMutation, SyncStoreName } from './types'
 import { DEFAULT_SYNC_CONFIG, getOrCreateDeviceId } from './types'
 import { isApplyingRemote, notifyLocalMutation } from './tracker'
 import { requestBackgroundSync } from './backgroundSync'
+import type { NanakiDatabase } from '../db'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let getDBRef: (() => Promise<any>) | null = null
+let getDBRef: (() => Promise<NanakiDatabase>) | null = null
 
-export function registerSyncDB(getDB: () => Promise<any>) {
+export function registerSyncDB(getDB: () => Promise<NanakiDatabase>) {
   getDBRef = getDB
 }
 

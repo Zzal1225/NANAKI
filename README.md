@@ -11,6 +11,24 @@
 
 **5173과 4173은 저장소가 완전히 다릅니다.** 실제 기록은 4173에서 설치한 앱으로만 사용하세요.
 
+## Architecture
+
+```
+Home
+ ├── Budget   (가계부)
+ ├── Body     (체형)
+ ├── Records  (기록 · 검색)
+ └── Habits   (습관)
+
+        ↓
+
+   IndexedDB  (로컬 저장 · 오프라인)
+
+        ↓
+
+ (추후) Supabase Sync  (멀티 디바이스 · Auth)
+```
+
 ## 일상 사용 (권장)
 
 ### 1. 최초 1회 — 설치
@@ -40,46 +58,50 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 
 ## 기능 · 진행
 
-| 탭          | 내용                            | MVP |
-| ----------- | ------------------------------- | --- |
-| 가계부 | 카테고리별 예산, 고정/변동 지출 | ✅ |
-| 체형 | 체중 · 둘레 · 측정주기 · 눈바디 | ✅ |
-| 기록 | 개인 검색 · 기록 보관 | 🔜 |
-| 운동 | *(기록 > 활동으로 통합 예정)* | — |
-| 습관        | 일일 체크                       | 🔜  |
-| 홈          | 캘린더, 30일 비교, 통합 검색    | 🔜  |
+| 탭     | 내용                            | MVP |
+| ------ | ------------------------------- | --- |
+| 가계부 | 카테고리별 예산, 고정/변동 지출 | ✅  |
+| 체형   | 체중 · 둘레 · 측정주기 · 눈바디 | ✅  |
+| 기록   | 개인 검색 · 기록 보관           | 🔜  |
+| 습관   | 일일 체크                       | 🔜  |
+| 홈     | 캘린더, 30일 비교, 통합 검색    | 🔜  |
 
 로드맵: [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ---
 
-## 아키텍처 (포트폴리오)
-
-### 폴더 구조
+## 프로젝트 구조
 
 ```
 src/
-├── pages/           # 탭별 페이지 (라우트 진입점)
-├── components/      # UI — common · layout · budget · dashboard …
-├── budget/          # 가계부 도메인 로직 (예산·반복·집계)
-├── db/              # IndexedDB CRUD · 마이그레이션 · UserOwned
-├── export/          # JSON/CSV 백업·복원
-├── context/         # SectionContext · SyncContext
-├── hooks/           # useAsync 등
-├── home/            # 홈 분석 집계
-├── search/          # 통합 검색
-├── sync/            # 동기화 큐 (Supabase 대비)
-├── pwa/             # SW 등록 · 업데이트 프롬프트
-├── types/           # 공통 타입 (UserOwned 포함)
-└── config/          # 섹션 ON/OFF · LOCAL_USER_ID
+├── pages/           탭 단위 페이지 (Home, Budget, Body, Records, Habits)
+├── components/      공통 UI 및 도메인 컴포넌트
+├── budget/          예산 계산, 반복지출, 집계 로직
+├── db/              IndexedDB, Repository, Migration
+├── search/          검색 엔진
+├── sync/            Supabase 동기화 (예정)
+├── types/           공통 타입
+└── config/          앱 설정
 ```
 
-### 컴포넌트 분리
+| 폴더 | 책임 |
+| ---- | ---- |
+| `pages/` | 라우트 진입점. 데이터 로드·상태 조합·하위 컴포넌트 배치를 담당합니다. |
+| `components/` | 재사용 UI(`common`, `layout`)와 도메인별 화면 조각(`budget`, `body` 등)을 담당합니다. |
+| `budget/` | 예산 계산, 반복 고정지출, 카테고리 집계 등 가계부 비즈니스 로직을 담당합니다. |
+| `db/` | IndexedDB CRUD, 마이그레이션, `UserOwned` 스탬프 처리를 담당합니다. |
+| `search/` | 기록·지출 등 통합 검색 쿼리와 결과 정렬을 담당합니다. |
+| `sync/` | Supabase 동기화 큐·백그라운드 sync (Phase 4–5 대비)를 담당합니다. |
+| `types/` | 도메인 공통 TypeScript 타입 정의를 담당합니다. |
+| `config/` | 탭·섹션 ON/OFF, 로컬 사용자 ID 등 앱 설정을 담당합니다. |
 
-- **페이지** — 데이터 로드·상태·모달 조합 (`BudgetPage`)
-- **섹션** — 탭 내부 기능 단위 (`HealthSection`, `ExerciseSection`)
-- **common** — `Modal`, `Card`, `Calendar` 등 재사용 UI
-- **도메인** — UI 없는 순수 로직 (`budget/recurringFixed.ts`, `categoryMatch.ts`)
+### 코드 품질 원칙
+
+- **Prettier + ESLint** — `npm run format`, `npm run lint`
+- **함수 단일 책임** — validation · DB · toast를 한 함수에 섞지 않음
+- **컴포넌트 분리** — `BudgetPage` → `BudgetSummarySection`, `ExpenseModal` 등
+- **비즈니스/UI 분리** — 계산은 `budget/`, 표시는 `components/`
+- **공통 utils** — `formatMoney()`, `calculatePercent()` 등
 
 ### 상태 관리
 
@@ -89,9 +111,8 @@ src/
 
 ### IndexedDB
 
-- DB: `nanaki-db` — 지출·예산·건강·습관 등 store 분리
+- DB: `nanaki-db` — 지출·예산·체형·습관 등 store 분리
 - `UserOwned` — 모든 레코드에 `userId: 'local-user'` (Supabase 대비)
-- `stampUserOwned()` / `ensureUserOwned()` — 저장·읽기 시 타임스탬프 처리
 - JSON/CSV 백업·복원 지원
 
 자세히: [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)
@@ -102,23 +123,27 @@ src/
 - 5173(dev) / 4173(preview) **저장소 분리** — 실사용은 설치 앱만
 - install prompt · 업데이트 배너
 
-### Supabase (예정)
+---
 
-- Phase 4: 테이블 · RLS · IndexedDB 어댑터
-- Phase 5: Auth · Migration · Desktop/Mobile 동기화
-- 대규모 작업 시 `feature/supabase` 브랜치만 임시 사용
+## 스크린샷
 
-### 성능
+> MVP 완성 후 추가 예정. 체크리스트: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
 
-- 탭·페이지 단위 코드 분할 (Vite lazy route 가능)
-- IndexedDB 인덱스 (`by-date`, `by-month` 등)로 월별 조회
-- `useMemo`로 차트·집계 데이터 캐싱
+<!--
+| 홈 | 가계부 |
+|:---:|:---:|
+| ![홈](assets/screenshots/home.png) | ![가계부](assets/screenshots/budget.png) |
+
+| 체형 | 기록 |
+|:---:|:---:|
+| ![체형](assets/screenshots/body.png) | ![기록](assets/screenshots/records.png) |
+-->
 
 ---
 
 ## 기술 스택
 
-React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-pwa
+React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-pwa · ESLint · Prettier
 
 ## Git
 
@@ -141,3 +166,4 @@ React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-p
 | [docs/ROADMAP.md](docs/ROADMAP.md)             | 개발 순서 · Phase 체크리스트        |
 | [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)     | IndexedDB · UserOwned · 가계부 구조 |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | 디자인 토큰 · UI 패턴               |
+| [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)     | README 스크린샷 체크리스트          |

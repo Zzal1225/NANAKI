@@ -9,7 +9,7 @@ export default function BodyPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="체형" subtitle="체중 · 둘레 · 눈바디" tab="body" />
+      <PageHeader title="체형" tab="body" />
 
       {isSectionEnabled('body-metrics') && <BodyMetricsSection />}
       {isSectionEnabled('body-photo') && <BodyPhotoSection />}

@@ -92,6 +92,8 @@ interface NanakiDB extends DBSchema {
   }
 }
 
+export type NanakiDatabase = IDBPDatabase<NanakiDB>
+
 const DB_NAME = 'nanaki-db'
 export { DB_NAME }
 const DB_VERSION = 4

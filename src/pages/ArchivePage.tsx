@@ -46,7 +46,6 @@ export default function ArchivePage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="기록"
-        subtitle="개인 검색 · 기록 보관"
         tab="records"
         actions={
           <button
