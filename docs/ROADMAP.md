@@ -55,18 +55,26 @@ Supabase 연동
 - Supabase·로그인처럼 **규모가 큰 작업**만 `feature/supabase` 등 임시 브랜치 → merge 후 삭제
 - **태그 사용 안 함**
 
-### 커밋 메시지 (한국어, 직관적으로)
+### 커밋 규칙
+
+형식: `{타입}: {한국어 설명}` — 설명은 **무엇을 했는지** 직관적으로.
+
+| 타입 | 용도 | 예시 |
+|------|------|------|
+| `feat` | 새 기능 추가 | `feat: 건강 탭 추가` |
+| `fix` | 버그 수정 | `fix: 고정지출 월별 삭제 오류 수정` |
+| `refactor` | 코드 구조 개선 (동작 변화 없음) | `refactor: 예산 집계 로직 분리` |
+| `style` | UI 스타일만 변경 | `style: 가계부 카드 간격 조정` |
+| `docs` | 문서 수정 | `docs: README 아키텍처 정리` |
 
 ```
 feat: 가계부 탭 완성
 feat: 건강 탭 추가
-feat: 운동 탭 추가
-feat: 기록 탭 추가
-feat: 습관 탭 추가
-feat: 홈 대시보드 추가
-feat: PWA 적용
 fix: 고정지출 월별 삭제 오류 수정
-docs: README 정리
+refactor: UserOwned 저장 로직 분리
+style: 예산 바 색상 조정
+docs: ROADMAP 커밋 규칙 추가
+feat: PWA 적용
 feat: Supabase 연동
 feat: 로그인 기능 추가
 ```

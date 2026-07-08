@@ -122,13 +122,17 @@ React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-p
 
 ## Git
 
-`main` 브랜치만 사용. 기능 완성마다 한국어 커밋:
+`main` 브랜치만 사용. 커밋 형식은 `{타입}: {설명}` (한국어).
 
-```
-feat: 가계부 탭 완성
-feat: 건강 탭 추가
-feat: PWA 적용
-```
+| 타입 | 용도 |
+|------|------|
+| `feat` | 새 기능 추가 |
+| `fix` | 버그 수정 |
+| `refactor` | 코드 구조 개선 (동작 변화 없음) |
+| `style` | UI 스타일만 변경 |
+| `docs` | 문서 수정 |
+
+자세히: [docs/ROADMAP.md — Git](docs/ROADMAP.md#git)
 
 ## 문서
 
