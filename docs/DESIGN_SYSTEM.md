@@ -36,12 +36,12 @@
 |------|--------|------|
 | `--color-accent` | `bg-accent`, `text-accent` | CTA, 활성 탭, 뱃지 |
 | `--color-accent-dim` | `bg-accent-dim` | 버튼 hover |
-| `--color-success` | `text-success` | — |
-| `--color-warning` | `text-warning` | — |
+| `--color-success` | `text-success` | 변동 지출 등 |
+| `--color-warning` | `text-warning` | 예산 제안 배너 등 |
 | `--color-danger` | `text-danger` | 에러, 초과 예산 |
 | `--color-budget` | `text-budget` | 고정지출, 가계부 강조 |
-| `--color-body` | `text-body` | 내몸 탭 |
-| `--color-archive` | `text-archive` | 아카이브 |
+| `--color-body` | `text-body` | 체형 탭 |
+| `--color-archive` | `text-archive` | 기록 탭 |
 | `--color-habit-good` / `habit-bad` | — | 습관 |
 
 ### Border
@@ -77,6 +77,7 @@
 - `px-4 pb-24` — 하단 탭바 여백
 - 고정 하단 `nav`: `bg-surface-raised/95 backdrop-blur-lg`
 - 활성 탭: `text-accent`, 비활성: `text-text-muted`
+- 탭: 홈 · 가계부 · 체형 · 기록 · 습관 (`src/config/sections.ts`)
 
 ---
 
@@ -118,7 +119,8 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 
 | 경로 | 역할 |
 |------|------|
-| `components/budget/BudgetOverview.tsx` | 총 예산 바 |
+| `components/budget/*` | 가계부 UI (`BudgetOverview`, `ExpenseModal`, `BudgetSummarySection` …) |
+| `components/body/*` | 체형 UI (`BodyMetricsSection`, `BodyPhotoSection`, 측정 주기) |
 | `components/search/GlobalSearch.tsx` | 홈 통합 검색 |
 | `components/settings/SectionSettings.tsx` | 탭·섹션 ON/OFF |
 | `components/pwa/InstallPrompt.tsx` | PWA 설치 (prod) |
@@ -128,9 +130,11 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 
 ## 컴포넌트 작성 패턴
 
-1. **페이지 vs 컴포넌트**  
-   - 재사용 UI → `src/components/`  
-   - 탭 전용·모달·로직 밀집 → `src/pages/*Page.tsx`에 co-locate (가계부 모달 등)
+1. **페이지 vs 컴포넌트 vs 도메인 로직**  
+   - 라우트 조합 · 상태 → `src/pages/*Page.tsx`  
+   - 재사용·도메인 UI → `src/components/{domain}/`  
+   - 계산·집계 (프레임워크 무관) → `src/budget/`, `src/body/` 등  
+   - 예: `BudgetPage` → `BudgetSummarySection` + `ExpenseModal` + `computeBudgetPageStats()`
 
 2. **스타일**  
    - Tailwind 유틸만 사용 (별도 CSS Module 없음)  
@@ -140,7 +144,7 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 
 3. **데이터**  
    - `useAsync` + `src/db` CRUD  
-   - 도메인 계산 → `src/budget/`, `src/budget/categoryMatch.ts` 등
+   - 도메인 계산 → `src/budget/`, `src/utils/format.ts` 등
 
 4. **아이콘**  
    - `lucide-react`, 크기 14–20px, `text-text-muted` 또는 컨텍스트 색
@@ -148,6 +152,9 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 5. **모달 폼**  
    - `Modal` + `form.gap-4` + `btnPrimary` submit  
    - validation 에러만 `text-danger text-xs` (설명 문구 임의 추가 지양)
+
+6. **페이지 헤더**  
+   - `PageHeader` — 가계부 외 탭은 **subtitle 없음** (타이틀만)
 
 ---
 

@@ -1,6 +1,6 @@
 # 데이터 스키마
 
-Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, v3)에 저장됩니다.  
+Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, **v4**)에 저장됩니다.  
 타입 정의 원본: `src/types/index.ts`
 
 > **멀티 사용자 전제**: Phase 1–3에서는 실제 로그인 없이 `userId: 'local-user'`를 사용합니다.  
@@ -24,23 +24,34 @@ interface UserOwned {
 
 ## 저장소(Store) 목록
 
+### 활성 (UI·기능에서 사용)
+
 | Store | Key | 인덱스 | 설명 |
 |-------|-----|--------|------|
 | `budgetSettings` | `id` | `by-month` | 월별 예산 설정 |
 | `expenses` | `id` | `by-date` | 지출 기록 |
-| `bodyRecords` | `id` | `by-date` | 체형 기록 |
-| `archiveItems` | `id` | `by-date`, `by-type` | 아카이브 |
+| `bodyRecords` | `id` | `by-date` | 체중 · 둘레 측정 |
+| `bodyPhotos` | `id` | `by-date` | 눈바디 사진 (Blob, v4) |
+| `archiveItems` | `id` | `by-date`, `by-type` | 기록(아카이브) |
 | `habits` | `id` | — | 습관 정의 |
 | `habitLogs` | `id` | `by-date`, `by-habit` | 습관 체크 |
-| `periodRecords` | `id` | `by-start` | 생리 기록 |
-| `bpRecords` | `id` | `by-date` | 혈압 |
-| `sugarRecords` | `id` | `by-date` | 혈당 |
-| `sleepRecords` | `id` | `by-date` | 수면 |
-| `hospitalRecords` | `id` | `by-date` | 병원 |
-| `exerciseRecords` | `id` | `by-date` | 운동 |
 | `appSettings` | `id` | — | 앱 전역 설정 |
 | `syncQueue` | `id` | `by-synced` | 동기화 큐 |
 | `syncConfig` | `id` | — | 동기화 설정 |
+
+### 레거시 (UI 미사용 · 백업 호환용)
+
+아래 store는 IndexedDB·JSON/CSV 백업에 **남아 있을 수 있으나**, 앱 UI에서는 사용하지 않습니다.  
+(생리 · 혈압 · 혈당 · 수면 · 병원 · 운동 탭/섹션 제거)
+
+| Store | 설명 | 비고 |
+|-------|------|------|
+| `periodRecords` | 생리 기록 | UI 제거 |
+| `bpRecords` | 혈압 | UI 제거 |
+| `sugarRecords` | 혈당 | UI 제거 |
+| `sleepRecords` | 수면 | UI 제거 |
+| `hospitalRecords` | 병원 | UI 제거 |
+| `exerciseRecords` | 운동 | UI 제거 · 추후 **기록 > 활동**으로 재설계 예정 |
 
 ---
 
@@ -50,18 +61,18 @@ interface UserOwned {
 
 ```
 BudgetCategory (8개 고정 제공)
-    └── CategoryBudgetItem[]  ← 월별 예산 (세부항목 단위)
+    └── CategoryBudgetItem[]  ← 월별 예산 (카테고리 총액 / 세부항목)
             └── subItem: "월세", "휴대폰요금" …
 
 Expense[]  ← 실제 지출
     ├── categoryId / categoryName  → BudgetCategory
-    └── subItem                    → CategoryBudgetItem.subItem 과 문자열 매칭
+    └── subItem                    → 세부항목 태그 (문자열 매칭)
 ```
 
 - **카테고리**: 앱이 제공하는 8개 (`주거/통신`, `식비`, `교통/차량`, `생활/쇼핑`, `문화/여가`, `의료/교육`, `금융`, `기타`). `AppSettings.budgetCategories`에 ID·이름 저장.
-- **세부항목**: 카테고리 하위 자유 입력 태그. 예: `주거/통신` + `월세`, `금융` + `대출`, `금융` + `보험`.
-- **예산**: `CategoryBudgetItem` 한 건 = `(categoryId, subItem)` + 금액.
-- **지출**: `Expense` 한 건 = 카테고리 + 세부항목(선택) + 금액 + 날짜.
+- **세부항목**: 카테고리 하위 자유 입력 태그. 예: `주거/통신` + `월세`.
+- **예산**: `CategoryBudgetItem` — 카테고리 총액(`isCategoryTotal`) 또는 세부항목 단위.
+- **지출**: `Expense` — 카테고리 + 세부항목(선택) + 금액 + 날짜 · 고정/변동.
 
 ### BudgetCategory
 
@@ -81,25 +92,19 @@ interface CategoryBudgetItem {
   amount: number
   subItem?: string           // 세부항목명 (예: "월세")
   isCategoryTotal?: boolean  // true면 카테고리 총 예산 (subItem 없음)
-  isFixed?: boolean          // 고정지출 → 매월 Expense 자동 생성
-  fixedDay?: number          // 1–31, isFixed일 때
+  isFixed?: boolean          // 고정지출 표시 (레거시 동기화용)
+  fixedDay?: number          // 1–31
 }
 ```
-
-| 필드 | 용도 |
-|------|------|
-| `subItem` + `amount` | 세부항목 예산 (예: 월세 500,000원) |
-| `isCategoryTotal` | 카테고리 전체 상한 (세부항목 합과 별도) |
-| `isFixed` | 예산 저장 시 `Expense` 마스터(`id` 동일)로 동기화 |
 
 ### BudgetSettings (월별)
 
 ```typescript
-interface BudgetSettings {
+interface BudgetSettings extends UserOwned {
   id: string
   month: string              // "YYYY-MM"
   totalBudget: number        // budgetItems 합계 (캐시)
-  categories: BudgetCategory[] // 해당 월 스냅샷 (전역과 동기)
+  categories: BudgetCategory[]
   budgetItems: CategoryBudgetItem[]
   enabledCategoryIds?: string[] // UI에 표시할 카테고리 ID
 }
@@ -121,50 +126,89 @@ interface Expense extends UserOwned {
   subItem?: string
   recurringTemplateId?: string
   fixedDay?: number
+  isRecurringMonthly?: boolean
+  effectiveFrom?: string     // 버전 적용 시작 월 YYYY-MM
+  recurringStartMonth?: string
+  recurringEndMonth?: string
 }
 ```
 
 | type | 생성 경로 |
 |------|-----------|
 | `variable` | 지출 추가 모달 (수동) |
-| `fixed` | `CategoryBudgetItem.isFixed` 저장 시 `syncFixedBudgetExpenses()` |
+| `fixed` | 지출 모달 · 매월 반복 버전 관리 (`recurringFixed`) |
 
 고정지출 가상 레코드 ID: `{masterId}__{YYYY-MM}` (해당 월 조회 시 합성).
 
 ### AppSettings (전역)
 
 ```typescript
-interface AppSettings {
+interface AppSettings extends UserOwned {
   id: 'app-settings'
   enabledTabs: TabId[]
   enabledSections: SectionId[]
+  schemaVersion?: number
   budgetCategories?: BudgetCategory[]
+  bodyMeasurementIntervals?: Partial<Record<BodyMetricKey, number>>
 }
 ```
 
+탭: `home` · `budget` · `body` · `records` · `habits`
+
 ---
 
-## 기타 도메인 (요약)
+## 체형 도메인
 
-| 타입 | 주요 필드 |
-|------|-----------|
-| `BodyRecord` | `date`, `weight`, `bodyFat`, `measurements`, `inbody` |
-| `ArchiveItem` | `type`, `title`, `tags[]`, `rating`, `location` |
-| `Habit` / `HabitLog` | 습관 정의 + 일별 `completed` |
-| `ExerciseRecord` | `type`, `duration`, `intensity`, `calories` |
-| `PeriodRecord` | `startDate`, `endDate` |
-| `BloodPressureRecord` | `systolic`, `diastolic` |
-| `BloodSugarRecord` | `value`, `timing` |
-| `SleepRecord` | `hours`, `quality` |
-| `HospitalRecord` | `hospital`, `treatment`, `amount` |
+### BodyRecord
+
+```typescript
+interface BodyRecord extends UserOwned {
+  id: string
+  date: string
+  weight?: number
+  bodyFat?: number
+  measurements?: BodyMeasurements  // waist, hip, chest, arm, thigh, calf
+}
+```
+
+- 인바디(`inbody`) · 메모는 **UI 미사용**. 레거시 import만 `LegacyBodyRecord`로 호환.
+
+### BodyPhotoRecord (눈바디)
+
+```typescript
+interface BodyPhotoRecord extends UserOwned {
+  id: string
+  date: string
+  mimeType: 'image/jpeg'
+  blob: Blob   // IndexedDB 전용 — JSON 백업 제외
+}
+```
+
+- 업로드 시 `compressBodyPhoto()`로 JPEG 압축 후 저장.
+- 측정 주기: `AppSettings.bodyMeasurementIntervals` (항목별 일 수).
+
+---
+
+## 기록 · 습관 (요약)
+
+| 타입 | 주요 필드 | MVP |
+|------|-----------|-----|
+| `ArchiveItem` | `type`, `title`, `tags[]`, `rating`, `location`, `memo` | 🔜 |
+| `Habit` / `HabitLog` | 습관 정의 + 일별 `completed` | 🔜 |
+
+`ArchiveType`: `product` | `place` | `treatment` | `other`  
+(운동은 별도 탭 없음 → 추후 기록 탭의 **활동**으로 통합 예정)
 
 ---
 
 ## 검색
 
-- `Expense`: `categoryName`, `subItem`, `amount` 텍스트 매칭 (`unifiedSearch`)
-- `CategoryBudgetItem.subItem`: 예산 세부항목도 검색 결과에 포함
+- `Expense`: `categoryName`, `subItem`, `amount` (`unifiedSearch`)
+- `BodyRecord` / `BodyPhotoRecord`: 체형 · 눈바디
 - `ArchiveItem`: `title`, `memo`, `tags`, `location`
+- `Habit`: 습관명
+
+결과 타입: `records` | `expense` | `body` | `bodyPhoto` | `habit`
 
 ---
 
@@ -177,5 +221,7 @@ interface AppSettings {
 | `교통` | `교통/차량` |
 | `쇼핑`, `구독` | `생활/쇼핑` |
 | `여가` | `문화/여가` |
+| DB v3 | DB v4 (`bodyPhotos` 추가) |
+| `BodyRecord.inbody` / `memo` | UI 제거 · 레거시 타입만 유지 |
 
 `mergeProvidedCategories()`, `migrateLegacyExpenses()`가 ID 유지하며 이름만 정규화합니다.

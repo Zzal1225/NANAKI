@@ -11,13 +11,15 @@
 
 ## 필수 화면
 
-| 파일 | 화면 | 상태 |
-|------|------|------|
-| `home.png` | 홈 · 캘린더 | 🔜 |
-| `budget.png` | 가계부 · 예산/차트 | 🔜 |
-| `body.png` | 체형 · 눈바디 | 🔜 |
-| `records.png` | 기록 · 검색 | 🔜 |
-| `habits.png` | 습관 · 점수 | 🔜 |
+| 파일 | 화면 | MVP | 캡처 |
+|------|------|-----|------|
+| `budget.png` | 가계부 · 예산/차트 | ✅ | 🔜 |
+| `body.png` | 체형 · 눈바디 | ✅ | 🔜 |
+| `records.png` | 기록 · 검색 | 🔜 | 🔜 |
+| `habits.png` | 습관 · 점수 | 🔜 | 🔜 |
+| `home.png` | 홈 · 캘린더 | 🔜 | 🔜 |
+
+> 탭 MVP가 끝난 화면부터 미리 캡처해도 됩니다. README에는 **전체 탭 완성 후** 한꺼번에 넣는 것을 권장합니다.
 
 ## README 반영 예시
 
@@ -27,6 +29,10 @@
 | 홈 | 가계부 |
 |:---:|:---:|
 | ![홈](assets/screenshots/home.png) | ![가계부](assets/screenshots/budget.png) |
+
+| 체형 | 기록 |
+|:---:|:---:|
+| ![체형](assets/screenshots/body.png) | ![기록](assets/screenshots/records.png) |
 ```
 
 ## 완료 시
@@ -34,3 +40,4 @@
 - [ ] `assets/screenshots/`에 PNG 추가
 - [ ] README 스크린샷 섹션 주석 해제
 - [ ] GitHub에서 이미지 렌더 확인
+- [ ] [ROADMAP.md](./ROADMAP.md) Phase 2 스크린샷 항목 체크

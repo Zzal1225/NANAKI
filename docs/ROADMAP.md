@@ -28,12 +28,13 @@ Supabase 연동
 | 단계 | 내용 | 상태 |
 |------|------|------|
 | 가계부 MVP | 예산 · 고정/변동 · 반복 · 차트 · 검색 | ✅ |
-| **체형 MVP** | 체중 · 둘레 · 측정주기 · 눈바디(사진) | ✅ **현재** |
-| 기록 MVP | 검색 · 유형 · 활동 | 🔜 |
-| 습관 MVP | 일일 체크 | 🔜 |
-| 홈 대시보드 | 캘린더 · 분석 | 🔜 |
+| 체형 MVP | 체중 · 둘레 · 측정주기 · 눈바디(사진) | ✅ |
+| 코드 품질 | BudgetPage 분리 · ESLint/Prettier · README | ✅ |
+| **기록 MVP** | 검색 · 유형 · (추후 활동) | 🔜 **다음** |
+| 습관 MVP | 일일 체크 · 점수 | 🔜 |
+| 홈 대시보드 | 캘린더 · 분석 · 통합 검색 | 🔜 |
 | PWA 배포 | Netlify · install | 🔜 |
-| UX 개선 | 실사용 피드백 | 🔜 |
+| UX 개선 | 실사용 피드백 · 무소비 등 | 🔜 |
 | Supabase | 테이블 · RLS | 🔜 |
 | 로그인 · 동기화 | Auth · Migration | 🔜 |
 
@@ -43,6 +44,22 @@ Supabase 연동
 - [x] 고정지출 월별 반복 · 버전 관리
 - [x] 도넛 차트 · 세부항목 · 전월 예산 복사
 - [x] 지출 검색 · JSON/CSV 백업 호환
+
+### 체형 MVP — 완료
+
+- [x] 체중 · 둘레 측정
+- [x] 항목별 측정 주기
+- [x] 눈바디 (JPEG 압축 → IndexedDB `bodyPhotos`)
+- [x] 생리 · 혈압 · 혈당 · 수면 · 병원 · 운동 UI 제거
+
+### 범위에서 제외 / 보류
+
+| 항목 | 상태 |
+|------|------|
+| 생리 · 혈압 · 혈당 · 수면 · 병원 | UI 제거 (store는 백업 호환용으로만 유지) |
+| 운동 탭 | 제거 → 추후 **기록 > 활동**으로 통합 |
+| 무소비 (변동 지출 없는 날) | 가계부 UX 개선 시 |
+| 홈 | 모든 탭 MVP 후 |
 
 ---
 
@@ -60,19 +77,20 @@ Supabase 연동
 
 | 타입 | 용도 | 예시 |
 |------|------|------|
-| `feat` | 새 기능 추가 | `feat: 건강 탭 추가` |
+| `feat` | 새 기능 추가 | `feat: 체형 탭 추가` |
 | `fix` | 버그 수정 | `fix: 고정지출 월별 삭제 오류 수정` |
-| `refactor` | 코드 구조 개선 (동작 변화 없음) | `refactor: 예산 집계 로직 분리` |
+| `refactor` | 코드 구조 개선 (동작 변화 없음) | `refactor: BudgetPage 분리` |
 | `style` | UI 스타일만 변경 | `style: 가계부 카드 간격 조정` |
-| `docs` | 문서 수정 | `docs: README 아키텍처 정리` |
+| `docs` | 문서 수정 | `docs: DATA_SCHEMA 체형·레거시 정리` |
 
 ```
 feat: 가계부 탭 완성
-feat: 건강 탭 추가
+feat: 체형 탭 추가
 fix: 고정지출 월별 삭제 오류 수정
-refactor: UserOwned 저장 로직 분리
+refactor: BudgetPage 분리, ESLint/Prettier 추가 및 README 정리
 style: 예산 바 색상 조정
 docs: ROADMAP 커밋 규칙 추가
+feat: 기록 탭 추가
 feat: PWA 적용
 feat: Supabase 연동
 feat: 로그인 기능 추가
@@ -107,11 +125,12 @@ interface UserOwned {
 
 ## Phase별 체크리스트
 
-### Phase 1 — 탭별 MVP 🔜
+### Phase 1 — 탭별 MVP
 
 - [x] 가계부
 - [x] 체형 (체중 · 둘레 · 측정주기 · 눈바디)
-- [ ] 기록 (아카이브 → 검색 엔진)
+- [x] 코드 품질 (컴포넌트 분리 · ESLint/Prettier · Architecture README)
+- [ ] 기록 (검색 · 유형 · 활동 통합 예정)
 - [ ] 습관
 - [ ] 홈 대시보드
 - [x] `UserOwned` 타입 · 목업 제거
@@ -121,6 +140,7 @@ interface UserOwned {
 - [ ] Netlify · HTTPS
 - [ ] install · service worker 검증
 - [ ] 2주 실사용 · UX 피드백
+- [ ] README 스크린샷 (`assets/screenshots/`)
 
 ### Phase 3 — 데이터 구조 확정
 
@@ -141,4 +161,5 @@ interface UserOwned {
 
 - [DATA_SCHEMA.md](./DATA_SCHEMA.md) — IndexedDB · 타입 정의
 - [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) — UI 패턴
+- [SCREENSHOTS.md](./SCREENSHOTS.md) — README 스크린샷 체크리스트
 - [../README.md](../README.md) — 실행 · 아키텍처
