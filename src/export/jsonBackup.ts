@@ -62,6 +62,9 @@ function validatePayload(data: unknown): NanakiDataPayload {
   for (const key of requiredArrays) {
     if (!Array.isArray(payload[key])) throw new Error(`백업에 ${key} 항목이 없습니다.`)
   }
+  // v5 이후 추가 — 구버전 백업 호환
+  if (!Array.isArray(payload.supplementProducts)) payload.supplementProducts = []
+  if (!Array.isArray(payload.supplementIntakeLogs)) payload.supplementIntakeLogs = []
   if (!payload.appSettings) throw new Error('백업에 앱 설정이 없습니다.')
   return payload as NanakiDataPayload
 }

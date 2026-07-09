@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { addDays, format, parseISO, subDays } from 'date-fns'
 import { remapExpenseToCategories } from '../budget/categoryMatch'
-import type { AppSettings, ArchiveItem, BodyPhotoRecord, BodyRecord, BudgetCategory, BudgetSettings, BloodPressureRecord, BloodSugarRecord, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, PeriodContext, PeriodRecord, SleepRecord } from '../types'
+import type { AppSettings, ArchiveItem, BodyPhotoRecord, BodyRecord, BudgetCategory, BudgetSettings, BloodPressureRecord, BloodSugarRecord, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, PeriodContext, PeriodRecord, SleepRecord, SupplementIntakeLog, SupplementProduct } from '../types'
 import { DEFAULT_APP_SETTINGS } from '../config/sections'
 import { migrateAppSettings } from '../config/migrateSettings'
 import { ensureUserOwned, stampUserOwned, type UserOwnedInput } from './recordDefaults'
@@ -46,6 +46,15 @@ interface NanakiDB extends DBSchema {
     key: string
     value: HabitLog
     indexes: { 'by-date': string; 'by-habit': string }
+  }
+  supplementProducts: {
+    key: string
+    value: SupplementProduct
+  }
+  supplementIntakeLogs: {
+    key: string
+    value: SupplementIntakeLog
+    indexes: { 'by-date': string; 'by-product': string }
   }
   periodRecords: {
     key: string
@@ -96,7 +105,7 @@ export type NanakiDatabase = IDBPDatabase<NanakiDB>
 
 const DB_NAME = 'nanaki-db'
 export { DB_NAME }
-const DB_VERSION = 4
+const DB_VERSION = 5
 
 let dbPromise: Promise<IDBPDatabase<NanakiDB>> | null = null
 
@@ -190,6 +199,16 @@ export function getDB() {
             s.createIndex('by-date', 'date')
           }
         }
+        if (oldVersion < 5) {
+          if (!db.objectStoreNames.contains('supplementProducts')) {
+            db.createObjectStore('supplementProducts', { keyPath: 'id' })
+          }
+          if (!db.objectStoreNames.contains('supplementIntakeLogs')) {
+            const s = db.createObjectStore('supplementIntakeLogs', { keyPath: 'id' })
+            s.createIndex('by-date', 'date')
+            s.createIndex('by-product', 'productId')
+          }
+        }
       },
     })
   }
@@ -213,7 +232,7 @@ async function deleteTracked(idbStore: keyof NanakiDB, syncStore: SyncStoreName,
   await enqueueMutation(syncStore, 'delete', id)
 }
 
-registerSyncDB(getDB as () => Promise<unknown>)
+registerSyncDB(getDB)
 
 export function generateId() {
   return crypto.randomUUID()
@@ -462,6 +481,80 @@ export async function getBodyPhotoObjectUrl(id: string): Promise<string | null> 
   const row = await db.get('bodyPhotos', id)
   if (!row?.blob) return null
   return URL.createObjectURL(row.blob)
+}
+
+// Supplements
+export async function getAllSupplementProducts() {
+  const db = await getDB()
+  const rows = await db.getAll('supplementProducts')
+  return rows.map((row) => ensureUserOwned(row)).sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+}
+
+export async function getSupplementProduct(id: string) {
+  const db = await getDB()
+  const row = await db.get('supplementProducts', id)
+  return row ? ensureUserOwned(row) : undefined
+}
+
+export async function saveSupplementProduct(record: UserOwnedInput<SupplementProduct>) {
+  await putTracked('supplementProducts', 'supplementProducts', record)
+}
+
+export async function deleteSupplementProduct(id: string) {
+  await deleteTracked('supplementProducts', 'supplementProducts', id)
+}
+
+export async function getAllSupplementIntakeLogs() {
+  const db = await getDB()
+  const rows = await db.getAll('supplementIntakeLogs')
+  return rows.map((row) => ensureUserOwned(row))
+}
+
+export async function getSupplementIntakeLogsByDate(date: string) {
+  const db = await getDB()
+  const rows = await db.getAllFromIndex('supplementIntakeLogs', 'by-date', date)
+  return rows.map((row) => ensureUserOwned(row))
+}
+
+export async function getSupplementIntakeLogsInMonth(month: string) {
+  const all = await getAllSupplementIntakeLogs()
+  return all.filter((l) => l.date.startsWith(month))
+}
+
+export async function saveSupplementIntakeLog(record: UserOwnedInput<SupplementIntakeLog>) {
+  await putTracked('supplementIntakeLogs', 'supplementIntakeLogs', record)
+}
+
+export async function deleteSupplementIntakeLog(id: string) {
+  await deleteTracked('supplementIntakeLogs', 'supplementIntakeLogs', id)
+}
+
+export async function toggleSupplementDose(params: {
+  productId: string
+  date: string
+  scheduleKey: string
+  completed: boolean
+}) {
+  const logs = await getSupplementIntakeLogsByDate(params.date)
+  const existing = logs.find(
+    (l) => l.productId === params.productId && l.scheduleKey === params.scheduleKey,
+  )
+  if (existing) {
+    await saveSupplementIntakeLog({
+      ...existing,
+      completed: params.completed,
+      completedAt: params.completed ? new Date().toISOString() : undefined,
+    })
+    return
+  }
+  await saveSupplementIntakeLog({
+    id: generateId(),
+    productId: params.productId,
+    date: params.date,
+    scheduleKey: params.scheduleKey,
+    completed: params.completed,
+    completedAt: params.completed ? new Date().toISOString() : undefined,
+  })
 }
 
 // Health - Period (legacy import / backup only)

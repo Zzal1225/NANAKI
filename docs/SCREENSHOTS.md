@@ -14,7 +14,8 @@
 | 파일 | 화면 | MVP | 캡처 |
 |------|------|-----|------|
 | `budget.png` | 가계부 · 예산/차트 | ✅ | 🔜 |
-| `body.png` | 체형 · 눈바디 | ✅ | 🔜 |
+| `health.png` | 건강 · 체형/영양제 요약 | ✅ | 🔜 |
+| `supplements.png` | 영양제 전용 · 복용캘린더 | ✅ | 🔜 |
 | `records.png` | 기록 · 검색 | 🔜 | 🔜 |
 | `habits.png` | 습관 · 점수 | 🔜 | 🔜 |
 | `home.png` | 홈 · 캘린더 | 🔜 | 🔜 |
@@ -30,9 +31,9 @@
 |:---:|:---:|
 | ![홈](assets/screenshots/home.png) | ![가계부](assets/screenshots/budget.png) |
 
-| 체형 | 기록 |
+| 건강 | 영양제 |
 |:---:|:---:|
-| ![체형](assets/screenshots/body.png) | ![기록](assets/screenshots/records.png) |
+| ![건강](assets/screenshots/health.png) | ![영양제](assets/screenshots/supplements.png) |
 ```
 
 ## 완료 시

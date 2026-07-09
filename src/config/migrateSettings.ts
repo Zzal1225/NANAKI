@@ -2,7 +2,8 @@ import type { AppSettings, SectionId, TabId } from '../types'
 import { DEFAULT_APP_SETTINGS } from './sections'
 
 const TAB_ALIASES: Record<string, TabId> = {
-  mybody: 'body',
+  body: 'health',
+  mybody: 'health',
   archive: 'records',
 }
 
@@ -38,6 +39,11 @@ export function migrateAppSettings(raw: AppSettings): AppSettings {
         .filter((s) => !REMOVED_SECTIONS.has(s)) as SectionId[],
     ),
   ]
+
+  // 기존 체형 사용자에게 영양제 섹션 기본 ON
+  if (!enabledSections.includes('supplements-summary')) {
+    enabledSections.push('supplements-summary')
+  }
 
   return {
     ...raw,

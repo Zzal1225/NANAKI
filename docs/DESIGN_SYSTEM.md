@@ -40,7 +40,7 @@
 | `--color-warning` | `text-warning` | 예산 제안 배너 등 |
 | `--color-danger` | `text-danger` | 에러, 초과 예산 |
 | `--color-budget` | `text-budget` | 고정지출, 가계부 강조 |
-| `--color-body` | `text-body` | 체형 탭 |
+| `--color-body` | `text-body` | 건강 · 체형 강조 |
 | `--color-archive` | `text-archive` | 기록 탭 |
 | `--color-habit-good` / `habit-bad` | — | 습관 |
 
@@ -77,7 +77,7 @@
 - `px-4 pb-24` — 하단 탭바 여백
 - 고정 하단 `nav`: `bg-surface-raised/95 backdrop-blur-lg`
 - 활성 탭: `text-accent`, 비활성: `text-text-muted`
-- 탭: 홈 · 가계부 · 체형 · 기록 · 습관 (`src/config/sections.ts`)
+- 탭: 홈 · 가계부 · 건강 · 기록 · 습관 (`src/config/sections.ts`)
 
 ---
 
@@ -121,6 +121,7 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 |------|------|
 | `components/budget/*` | 가계부 UI (`BudgetOverview`, `ExpenseModal`, `BudgetSummarySection` …) |
 | `components/body/*` | 체형 UI (`BodyMetricsSection`, `BodyPhotoSection`, 측정 주기) |
+| `components/supplements/*` | 영양제 UI (요약 · 캘린더 · 추가 모달 · 합산 성분) |
 | `components/search/GlobalSearch.tsx` | 홈 통합 검색 |
 | `components/settings/SectionSettings.tsx` | 탭·섹션 ON/OFF |
 | `components/pwa/InstallPrompt.tsx` | PWA 설치 (prod) |
@@ -133,8 +134,8 @@ import Modal, { FormField, inputClass, btnPrimary } from '../components/common/M
 1. **페이지 vs 컴포넌트 vs 도메인 로직**  
    - 라우트 조합 · 상태 → `src/pages/*Page.tsx`  
    - 재사용·도메인 UI → `src/components/{domain}/`  
-   - 계산·집계 (프레임워크 무관) → `src/budget/`, `src/body/` 등  
-   - 예: `BudgetPage` → `BudgetSummarySection` + `ExpenseModal` + `computeBudgetPageStats()`
+   - 계산·집계 (프레임워크 무관) → `src/budget/`, `src/body/`, `src/supplements/` 등  
+   - 예: `HealthPage` → 체형 섹션 + `SupplementsSummarySection` → `/health/supplements`
 
 2. **스타일**  
    - Tailwind 유틸만 사용 (별도 CSS Module 없음)  

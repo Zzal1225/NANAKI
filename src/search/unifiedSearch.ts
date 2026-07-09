@@ -6,10 +6,12 @@ import {
   getAllBudgetSettings,
   getAllExpenses,
   getAllHabits,
+  getAllSupplementProducts,
 } from '../db'
 import { formatCurrency } from '../utils/dates'
 import { ARCHIVE_TYPE_LABELS } from '../utils/dates'
 import { SEARCH_TYPE_LABELS } from '../config/sections'
+import { formatCurrency as formatMoney } from '../utils/format'
 
 function matches(q: string, ...fields: (string | undefined)[]) {
   return fields.some((f) => f?.toLowerCase().includes(q))
@@ -21,14 +23,16 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
 
   const results: SearchResult[] = []
 
-  const [archives, expenses, budgetSettings, bodies, bodyPhotos, habits] = await Promise.all([
-    getAllArchiveItems(),
-    getAllExpenses(),
-    getAllBudgetSettings(),
-    getAllBodyRecords(),
-    getAllBodyPhotos(),
-    getAllHabits(),
-  ])
+  const [archives, expenses, budgetSettings, bodies, bodyPhotos, habits, supplements] =
+    await Promise.all([
+      getAllArchiveItems(),
+      getAllExpenses(),
+      getAllBudgetSettings(),
+      getAllBodyRecords(),
+      getAllBodyPhotos(),
+      getAllHabits(),
+      getAllSupplementProducts(),
+    ])
 
   for (const item of archives) {
     if (matches(q, item.title, item.memo, item.location, ...item.tags)) {
@@ -89,6 +93,7 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
         r.measurements?.waist?.toString(),
         '체형',
         '체중',
+        '건강',
       )
     ) {
       results.push({
@@ -96,19 +101,44 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
         type: 'body',
         title: r.weight ? `체중 ${r.weight}kg` : '체형 기록',
         date: r.date,
-        path: '/body',
+        path: '/health',
       })
     }
   }
 
   for (const p of bodyPhotos) {
-    if (matches(q, '눈바디', '사진')) {
+    if (matches(q, '눈바디', '사진', '체형', '건강')) {
       results.push({
         id: p.id,
         type: 'bodyPhoto',
         title: '눈바디',
         date: p.date,
-        path: '/body',
+        path: '/health',
+      })
+    }
+  }
+
+  for (const s of supplements) {
+    const nutrientNames = s.nutrients.map((n) => n.name)
+    const stores = (s.purchaseHistory ?? []).map((h) => h.store).filter(Boolean) as string[]
+    const prices = (s.purchaseHistory ?? []).map((h) => String(h.price))
+    if (
+      matches(q, s.name, ...nutrientNames, ...stores, ...prices, '영양제', '건강')
+    ) {
+      const lastPurchase = [...(s.purchaseHistory ?? [])].sort((a, b) =>
+        b.date.localeCompare(a.date),
+      )[0]
+      results.push({
+        id: s.id,
+        type: 'supplement',
+        title: s.name,
+        subtitle: lastPurchase
+          ? `${formatMoney(lastPurchase.price)}${lastPurchase.store ? ` · ${lastPurchase.store}` : ''}`
+          : s.endedAt
+            ? '복용 종료'
+            : '복용중',
+        date: lastPurchase?.date ?? s.startedAt ?? s.createdAt.slice(0, 10),
+        path: '/health/supplements',
       })
     }
   }

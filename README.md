@@ -16,7 +16,7 @@
 ```
 Home
  ├── Budget   (가계부)
- ├── Body     (체형)
+ ├── Health   (건강 · 체형 / 영양제)
  ├── Records  (기록 · 검색)
  └── Habits   (습관)
 
@@ -61,7 +61,7 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 | 탭     | 내용                            | MVP |
 | ------ | ------------------------------- | --- |
 | 가계부 | 카테고리별 예산, 고정/변동 지출 | ✅  |
-| 체형   | 체중 · 둘레 · 측정주기 · 눈바디 | ✅  |
+| 건강   | 체형(체중·둘레·눈바디) · 영양제 | ✅  |
 | 기록   | 개인 검색 · 기록 보관           | 🔜  |
 | 습관   | 일일 체크                       | 🔜  |
 | 홈     | 캘린더, 30일 비교, 통합 검색    | 🔜  |
@@ -74,7 +74,7 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 
 ```
 src/
-├── pages/           탭 단위 페이지 (Home, Budget, Body, Records, Habits)
+├── pages/           탭 단위 페이지 (Home, Budget, Health, Records, Habits)
 ├── components/      공통 UI 및 도메인 컴포넌트
 ├── budget/          예산 계산, 반복지출, 집계 로직
 ├── db/              IndexedDB, Repository, Migration
@@ -87,7 +87,7 @@ src/
 | 폴더 | 책임 |
 | ---- | ---- |
 | `pages/` | 라우트 진입점. 데이터 로드·상태 조합·하위 컴포넌트 배치를 담당합니다. |
-| `components/` | 재사용 UI(`common`, `layout`)와 도메인별 화면 조각(`budget`, `body` 등)을 담당합니다. |
+| `components/` | 재사용 UI(`common`, `layout`)와 도메인별 화면 조각(`budget`, `body`, `supplements` 등)을 담당합니다. |
 | `budget/` | 예산 계산, 반복 고정지출, 카테고리 집계 등 가계부 비즈니스 로직을 담당합니다. |
 | `db/` | IndexedDB CRUD, 마이그레이션, `UserOwned` 스탬프 처리를 담당합니다. |
 | `search/` | 기록·지출 등 통합 검색 쿼리와 결과 정렬을 담당합니다. |
@@ -134,9 +134,9 @@ src/
 |:---:|:---:|
 | ![홈](assets/screenshots/home.png) | ![가계부](assets/screenshots/budget.png) |
 
-| 체형 | 기록 |
+| 건강 | 기록 |
 |:---:|:---:|
-| ![체형](assets/screenshots/body.png) | ![기록](assets/screenshots/records.png) |
+| ![건강](assets/screenshots/health.png) | ![기록](assets/screenshots/records.png) |
 -->
 
 ---

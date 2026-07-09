@@ -205,6 +205,59 @@ export interface HabitLog extends UserOwned {
   completed: boolean
 }
 
+/** 영양 성분 — 이름·함량·단위 분리 저장 */
+export interface NutrientAmount {
+  name: string
+  amount: number
+  unit: string
+}
+
+/** 복용 시간대 (문자열 한 덩어리로 저장하지 않음) */
+export type SupplementDayPart = 'morning' | 'noon' | 'evening' | 'night'
+
+/** 식사 관계 */
+export type SupplementMealRelation = 'before' | 'after' | 'with' | 'anytime'
+
+export interface SupplementSchedule {
+  dayPart: SupplementDayPart
+  meal: SupplementMealRelation
+  /** 알람 시각 HH:mm (선택) */
+  alarmTime?: string
+}
+
+export interface PurchaseHistoryEntry {
+  id: string
+  date: string
+  price: number
+  store?: string
+}
+
+/** 영양제 제품 (개인 DB · 자동완성 소스) */
+export interface SupplementProduct extends UserOwned {
+  id: string
+  name: string
+  nutrients: NutrientAmount[]
+  /** 용량 표기 (예: 60정, 90캡슐) */
+  capacity?: string
+  schedule: SupplementSchedule[]
+  purchaseHistory: PurchaseHistoryEntry[]
+  /** 복용 시작일 YYYY-MM-DD */
+  startedAt?: string
+  /** 복용 종료일 — 있으면 복용중 목록에서 제외, 구매이력은 유지 */
+  endedAt?: string | null
+}
+
+/** 일별 복용 체크 */
+export interface SupplementIntakeLog extends UserOwned {
+  id: string
+  productId: string
+  date: string
+  /** schedule 슬롯 키 — `${dayPart}:${meal}:${index}` */
+  scheduleKey: string
+  completed: boolean
+  completedAt?: string
+}
+
 export interface DaySummary {
   date: string
   expenses: Expense[]
@@ -225,7 +278,13 @@ export interface PeriodContext {
   archiveItems: ArchiveItem[]
 }
 
-export type SearchResultType = 'records' | 'expense' | 'body' | 'bodyPhoto' | 'habit'
+export type SearchResultType =
+  | 'records'
+  | 'expense'
+  | 'body'
+  | 'bodyPhoto'
+  | 'supplement'
+  | 'habit'
 
 export interface ExpenseSearchStats {
   query: string
@@ -244,7 +303,7 @@ export interface SearchResult {
   path: string
 }
 
-export type TabId = 'home' | 'budget' | 'body' | 'records' | 'habits'
+export type TabId = 'home' | 'budget' | 'health' | 'records' | 'habits'
 
 export type SectionId =
   | 'budget-summary'
@@ -252,6 +311,7 @@ export type SectionId =
   | 'body-metrics'
   | 'body-photo'
   | 'body-intervals'
+  | 'supplements-summary'
   | 'records-search'
   | 'records-list'
   | 'habits-checklist'

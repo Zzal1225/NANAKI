@@ -1,6 +1,6 @@
 # 데이터 스키마
 
-Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, **v4**)에 저장됩니다.  
+Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, **v5**)에 저장됩니다.  
 타입 정의 원본: `src/types/index.ts`
 
 > **멀티 사용자 전제**: Phase 1–3에서는 실제 로그인 없이 `userId: 'local-user'`를 사용합니다.  
@@ -8,19 +8,17 @@ Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`,
 
 ## 공통 소유권 필드 (`UserOwned`)
 
-모든 사용자 레코드(지출, 예산, 습관 등)는 아래 필드를 가집니다.
-
 ```typescript
 interface UserOwned {
   userId: UserId       // 현재: 'local-user' (src/config/user.ts)
   createdAt: string    // ISO 8601
-  updatedAt?: string   // 저장 시 갱신
+  updatedAt?: string
 }
 ```
 
-- 저장 API: `stampUserOwned()` — `src/db/recordDefaults.ts`
-- 읽기: `ensureUserOwned()` — 레거시·백업 데이터 보정
-- 입력 타입: `UserOwnedInput<T>` — UI에서 `userId` 생략 가능
+- 저장: `stampUserOwned()` — `src/db/recordDefaults.ts`
+- 읽기: `ensureUserOwned()`
+- 입력: `UserOwnedInput<T>`
 
 ## 저장소(Store) 목록
 
@@ -31,133 +29,54 @@ interface UserOwned {
 | `budgetSettings` | `id` | `by-month` | 월별 예산 설정 |
 | `expenses` | `id` | `by-date` | 지출 기록 |
 | `bodyRecords` | `id` | `by-date` | 체중 · 둘레 측정 |
-| `bodyPhotos` | `id` | `by-date` | 눈바디 사진 (Blob, v4) |
-| `archiveItems` | `id` | `by-date`, `by-type` | 기록(아카이브) |
+| `bodyPhotos` | `id` | `by-date` | 눈바디 사진 (Blob) |
+| `supplementProducts` | `id` | — | 영양제 제품 · 구매이력 (v5) |
+| `supplementIntakeLogs` | `id` | `by-date`, `by-product` | 복용 체크 (v5) |
+| `archiveItems` | `id` | `by-date`, `by-type` | 기록 |
 | `habits` | `id` | — | 습관 정의 |
 | `habitLogs` | `id` | `by-date`, `by-habit` | 습관 체크 |
 | `appSettings` | `id` | — | 앱 전역 설정 |
 | `syncQueue` | `id` | `by-synced` | 동기화 큐 |
 | `syncConfig` | `id` | — | 동기화 설정 |
 
-### 레거시 (UI 미사용 · 백업 호환용)
+### 레거시 (UI 미사용 · 백업 호환)
 
-아래 store는 IndexedDB·JSON/CSV 백업에 **남아 있을 수 있으나**, 앱 UI에서는 사용하지 않습니다.  
-(생리 · 혈압 · 혈당 · 수면 · 병원 · 운동 탭/섹션 제거)
+| Store | 설명 |
+|-------|------|
+| `periodRecords` | 생리 |
+| `bpRecords` | 혈압 |
+| `sugarRecords` | 혈당 |
+| `sleepRecords` | 수면 |
+| `hospitalRecords` | 병원 |
+| `exerciseRecords` | 운동 (추후 기록>활동) |
 
-| Store | 설명 | 비고 |
-|-------|------|------|
-| `periodRecords` | 생리 기록 | UI 제거 |
-| `bpRecords` | 혈압 | UI 제거 |
-| `sugarRecords` | 혈당 | UI 제거 |
-| `sleepRecords` | 수면 | UI 제거 |
-| `hospitalRecords` | 병원 | UI 제거 |
-| `exerciseRecords` | 운동 | UI 제거 · 추후 **기록 > 활동**으로 재설계 예정 |
+---
+
+## 탭 · 섹션
+
+탭: `home` · `budget` · `health` · `records` · `habits`  
+(구 `body` / `mybody` → `health` 로 마이그레이션)
+
+건강 탭 섹션:
+
+| SectionId | 그룹 | 내용 |
+|-----------|------|------|
+| `body-metrics` | 체형 | 체중 · 둘레 |
+| `body-photo` | 체형 | 눈바디 |
+| `body-intervals` | 체형 | 측정 주기 |
+| `supplements-summary` | 영양제 | 요약 + 복용 캘린더 → `/health/supplements` |
 
 ---
 
 ## 가계부 도메인
 
-### 개념 관계
+(기존과 동일 — `BudgetCategory`, `CategoryBudgetItem`, `BudgetSettings`, `Expense`)
 
-```
-BudgetCategory (8개 고정 제공)
-    └── CategoryBudgetItem[]  ← 월별 예산 (카테고리 총액 / 세부항목)
-            └── subItem: "월세", "휴대폰요금" …
-
-Expense[]  ← 실제 지출
-    ├── categoryId / categoryName  → BudgetCategory
-    └── subItem                    → 세부항목 태그 (문자열 매칭)
-```
-
-- **카테고리**: 앱이 제공하는 8개 (`주거/통신`, `식비`, `교통/차량`, `생활/쇼핑`, `문화/여가`, `의료/교육`, `금융`, `기타`). `AppSettings.budgetCategories`에 ID·이름 저장.
-- **세부항목**: 카테고리 하위 자유 입력 태그. 예: `주거/통신` + `월세`.
-- **예산**: `CategoryBudgetItem` — 카테고리 총액(`isCategoryTotal`) 또는 세부항목 단위.
-- **지출**: `Expense` — 카테고리 + 세부항목(선택) + 금액 + 날짜 · 고정/변동.
-
-### BudgetCategory
-
-```typescript
-interface BudgetCategory {
-  id: string      // UUID, 전역 고정
-  name: string    // "주거/통신" | "식비" | … (8종)
-}
-```
-
-### CategoryBudgetItem
-
-```typescript
-interface CategoryBudgetItem {
-  id: string
-  categoryId: string
-  amount: number
-  subItem?: string           // 세부항목명 (예: "월세")
-  isCategoryTotal?: boolean  // true면 카테고리 총 예산 (subItem 없음)
-  isFixed?: boolean          // 고정지출 표시 (레거시 동기화용)
-  fixedDay?: number          // 1–31
-}
-```
-
-### BudgetSettings (월별)
-
-```typescript
-interface BudgetSettings extends UserOwned {
-  id: string
-  month: string              // "YYYY-MM"
-  totalBudget: number        // budgetItems 합계 (캐시)
-  categories: BudgetCategory[]
-  budgetItems: CategoryBudgetItem[]
-  enabledCategoryIds?: string[] // UI에 표시할 카테고리 ID
-}
-```
-
-- 신규 월 생성 시 `enabledCategoryIds` 기본값: `주거/통신`, `식비`, `교통/차량`.
-- `ensureBudgetSettingsForMonth()`가 월별 레코드 없으면 생성.
-
-### Expense
-
-```typescript
-interface Expense extends UserOwned {
-  id: string
-  date: string               // "YYYY-MM-DD"
-  amount: number
-  categoryId: string
-  categoryName: string
-  type: 'fixed' | 'variable'
-  subItem?: string
-  recurringTemplateId?: string
-  fixedDay?: number
-  isRecurringMonthly?: boolean
-  effectiveFrom?: string     // 버전 적용 시작 월 YYYY-MM
-  recurringStartMonth?: string
-  recurringEndMonth?: string
-}
-```
-
-| type | 생성 경로 |
-|------|-----------|
-| `variable` | 지출 추가 모달 (수동) |
-| `fixed` | 지출 모달 · 매월 반복 버전 관리 (`recurringFixed`) |
-
-고정지출 가상 레코드 ID: `{masterId}__{YYYY-MM}` (해당 월 조회 시 합성).
-
-### AppSettings (전역)
-
-```typescript
-interface AppSettings extends UserOwned {
-  id: 'app-settings'
-  enabledTabs: TabId[]
-  enabledSections: SectionId[]
-  schemaVersion?: number
-  budgetCategories?: BudgetCategory[]
-  bodyMeasurementIntervals?: Partial<Record<BodyMetricKey, number>>
-}
-```
-
-탭: `home` · `budget` · `body` · `records` · `habits`
+자세한 필드는 이전 문서·`src/types` 참고.
 
 ---
 
-## 체형 도메인
+## 체형 도메인 (건강 탭 · 체형 섹션)
 
 ### BodyRecord
 
@@ -167,48 +86,134 @@ interface BodyRecord extends UserOwned {
   date: string
   weight?: number
   bodyFat?: number
-  measurements?: BodyMeasurements  // waist, hip, chest, arm, thigh, calf
+  measurements?: BodyMeasurements
 }
 ```
 
-- 인바디(`inbody`) · 메모는 **UI 미사용**. 레거시 import만 `LegacyBodyRecord`로 호환.
-
-### BodyPhotoRecord (눈바디)
+### BodyPhotoRecord
 
 ```typescript
 interface BodyPhotoRecord extends UserOwned {
   id: string
   date: string
   mimeType: 'image/jpeg'
-  blob: Blob   // IndexedDB 전용 — JSON 백업 제외
+  blob: Blob  // JSON 백업 제외
 }
 ```
 
-- 업로드 시 `compressBodyPhoto()`로 JPEG 압축 후 저장.
-- 측정 주기: `AppSettings.bodyMeasurementIntervals` (항목별 일 수).
+측정 주기: `AppSettings.bodyMeasurementIntervals`
 
 ---
 
-## 기록 · 습관 (요약)
+## 영양제 도메인 (건강 탭)
 
-| 타입 | 주요 필드 | MVP |
-|------|-----------|-----|
-| `ArchiveItem` | `type`, `title`, `tags[]`, `rating`, `location`, `memo` | 🔜 |
-| `Habit` / `HabitLog` | 습관 정의 + 일별 `completed` | 🔜 |
+핵심: **제품 자동 검색이 아니라, 현재 복용 중인 성분 분석**.
 
-`ArchiveType`: `product` | `place` | `treatment` | `other`  
-(운동은 별도 탭 없음 → 추후 기록 탭의 **활동**으로 통합 예정)
+### NutrientAmount — 이름 · 함량 · 단위 분리
+
+```typescript
+interface NutrientAmount {
+  name: string    // "Vitamin A"
+  amount: number  // 1000
+  unit: string    // "IU"
+}
+```
+
+### SupplementSchedule — 복용법 Enum 분리
+
+문자열 `"아침 식전"` 한 덩어리로 저장하지 않음.
+
+```typescript
+type SupplementDayPart = 'morning' | 'noon' | 'evening' | 'night'
+type SupplementMealRelation = 'before' | 'after' | 'with' | 'anytime'
+
+interface SupplementSchedule {
+  dayPart: SupplementDayPart
+  meal: SupplementMealRelation
+  alarmTime?: string  // "HH:mm"
+}
+```
+
+### PurchaseHistoryEntry
+
+```typescript
+interface PurchaseHistoryEntry {
+  id: string
+  date: string
+  price: number
+  store?: string
+}
+```
+
+### SupplementProduct
+
+```typescript
+interface SupplementProduct extends UserOwned {
+  id: string
+  name: string
+  nutrients: NutrientAmount[]
+  capacity?: string
+  schedule: SupplementSchedule[]
+  purchaseHistory: PurchaseHistoryEntry[]
+  startedAt?: string
+  endedAt?: string | null  // 있으면 시 복용중 목록 제외, 구매이력 유지
+}
+```
+
+### SupplementIntakeLog
+
+```typescript
+interface SupplementIntakeLog extends UserOwned {
+  id: string
+  productId: string
+  date: string
+  scheduleKey: string  // `${dayPart}:${meal}:${index}`
+  completed: boolean
+  completedAt?: string
+}
+```
+
+### 합산 성분 표기
+
+제품별 성분을 합산하고 출처를 병기합니다.
+
+예) Magnesium **6mg** — `종합비타민 1mg, 마그네슘 5mg`
+
+로직: `src/supplements/nutrients.ts` → `aggregateNutrients()`
+
+### 성분 미리보기 (추가 시)
+
+`previewNutrientChanges(current, adding)` — 변경·신규만 강조.
+
+### 복용률 계산
+
+```
+expected  = 해당 월 각 날짜 × (그날 복용 중이던 제품의 schedule 슬롯 수 합)
+completed = 그 expected 중 IntakeLog.completed === true 인 건수
+rate      = expected === 0 ? 0 : round(completed / expected * 100)
+```
+
+예) 이번 달 복용해야 하는 횟수 **120회**, 복용 완료 **112회** → **93%**
+
+로직: `src/supplements/adherence.ts` → `calculateSupplementAdherence()`
+
+### MVP 자동완성
+
+1. 시드 카탈로그 (`src/supplements/catalog.ts`) + 개인 `supplementProducts`
+2. DB에 있으면 성분 자동 입력
+3. 없으면 수동 입력
+4. 저장 후 다음부터 개인 DB 자동완성
+
+### 알람
+
+`src/supplements/alarms.ts` — Notification API, 앱 포그라운드에서 `alarmTime` 기준 `setTimeout` (MVP).
 
 ---
 
 ## 검색
 
-- `Expense`: `categoryName`, `subItem`, `amount` (`unifiedSearch`)
-- `BodyRecord` / `BodyPhotoRecord`: 체형 · 눈바디
-- `ArchiveItem`: `title`, `memo`, `tags`, `location`
-- `Habit`: 습관명
-
-결과 타입: `records` | `expense` | `body` | `bodyPhoto` | `habit`
+결과 타입: `records` | `expense` | `body` | `bodyPhoto` | `supplement` | `habit`  
+영양제: 제품명 · 성분 · 구매처 · 가격 → `/health/supplements`
 
 ---
 
@@ -216,12 +221,6 @@ interface BodyPhotoRecord extends UserOwned {
 
 | 이전 | 이후 |
 |------|------|
-| `Expense.memo` | `Expense.subItem` |
-| `월세/관리비`, `통신비` | `주거/통신` |
-| `교통` | `교통/차량` |
-| `쇼핑`, `구독` | `생활/쇼핑` |
-| `여가` | `문화/여가` |
-| DB v3 | DB v4 (`bodyPhotos` 추가) |
-| `BodyRecord.inbody` / `memo` | UI 제거 · 레거시 타입만 유지 |
-
-`mergeProvidedCategories()`, `migrateLegacyExpenses()`가 ID 유지하며 이름만 정규화합니다.
+| TabId `body` / path `/body` | `health` / `/health` |
+| DB v4 | DB v5 (`supplementProducts`, `supplementIntakeLogs`) |
+| `BodyRecord.inbody` | UI 미사용 |

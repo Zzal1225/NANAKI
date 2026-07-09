@@ -6,6 +6,8 @@ export type SyncStoreName =
   | 'archiveItems'
   | 'habits'
   | 'habitLogs'
+  | 'supplementProducts'
+  | 'supplementIntakeLogs'
   | 'periodRecords'
   | 'bpRecords'
   | 'sugarRecords'
@@ -20,6 +22,8 @@ export const SYNC_STORE_NAMES: SyncStoreName[] = [
   'archiveItems',
   'habits',
   'habitLogs',
+  'supplementProducts',
+  'supplementIntakeLogs',
   'periodRecords',
   'bpRecords',
   'sugarRecords',

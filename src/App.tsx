@@ -4,7 +4,8 @@ import { SyncProvider } from './context/SyncContext'
 import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
 import BudgetPage from './pages/BudgetPage'
-import BodyPage from './pages/BodyPage'
+import HealthPage from './pages/HealthPage'
+import SupplementsPage from './pages/SupplementsPage'
 import ArchivePage from './pages/ArchivePage'
 import HabitsPage from './pages/HabitsPage'
 import SearchResultsPage from './pages/SearchResultsPage'
@@ -21,8 +22,10 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/budget" element={<BudgetPage />} />
-              <Route path="/body" element={<BodyPage />} />
-              <Route path="/mybody" element={<Navigate to="/body" replace />} />
+              <Route path="/health" element={<HealthPage />} />
+              <Route path="/health/supplements" element={<SupplementsPage />} />
+              <Route path="/body" element={<Navigate to="/health" replace />} />
+              <Route path="/mybody" element={<Navigate to="/health" replace />} />
               <Route path="/records" element={<ArchivePage />} />
               <Route path="/archive" element={<Navigate to="/records" replace />} />
               <Route path="/fitness" element={<Navigate to="/records" replace />} />

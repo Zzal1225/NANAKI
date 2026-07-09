@@ -10,6 +10,8 @@ import {
   getAllPeriodRecords,
   getAllSleepRecords,
   getAllSugarRecords,
+  getAllSupplementIntakeLogs,
+  getAllSupplementProducts,
   getAppSettings,
   getHabitLogsInRange,
 } from '../db'
@@ -27,6 +29,8 @@ import type {
   HospitalRecord,
   PeriodRecord,
   SleepRecord,
+  SupplementIntakeLog,
+  SupplementProduct,
 } from '../types'
 
 export interface NanakiDataPayload {
@@ -37,6 +41,8 @@ export interface NanakiDataPayload {
   archiveItems: ArchiveItem[]
   habits: Habit[]
   habitLogs: HabitLog[]
+  supplementProducts: SupplementProduct[]
+  supplementIntakeLogs: SupplementIntakeLog[]
   periodRecords: PeriodRecord[]
   bpRecords: BloodPressureRecord[]
   sugarRecords: BloodSugarRecord[]
@@ -54,6 +60,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     archiveItems,
     habits,
     habitLogs,
+    supplementProducts,
+    supplementIntakeLogs,
     periodRecords,
     bpRecords,
     sugarRecords,
@@ -68,6 +76,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     getAllArchiveItems(),
     getAllHabits(),
     getHabitLogsInRange('0000-01-01', '9999-12-31'),
+    getAllSupplementProducts(),
+    getAllSupplementIntakeLogs(),
     getAllPeriodRecords(),
     getAllBpRecords(),
     getAllSugarRecords(),
@@ -84,6 +94,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     archiveItems,
     habits,
     habitLogs,
+    supplementProducts,
+    supplementIntakeLogs,
     periodRecords,
     bpRecords,
     sugarRecords,

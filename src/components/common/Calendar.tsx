@@ -121,9 +121,7 @@ export default function Calendar({
       <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-text-muted">
         <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-budget" /> 가계부</span>
         <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-body" /> 체형</span>
-        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-archive" /> 아카이브</span>
-        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-success" /> 운동</span>
-        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-habit-bad" /> 건강</span>
+        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-archive" /> 기록</span>
         <span>😊 습관</span>
       </div>
     </div>
