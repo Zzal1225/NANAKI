@@ -43,6 +43,8 @@ export interface BudgetSettings extends UserOwned {
   budgetItems: CategoryBudgetItem[]
   /** 사용자가 선택한 활성 카테고리 ID */
   enabledCategoryIds?: string[]
+  /** 무소비로 표시한 날짜 (YYYY-MM-DD) — 해당 월 누적 일수 */
+  noSpendDates?: string[]
 }
 
 export interface Expense extends UserOwned {

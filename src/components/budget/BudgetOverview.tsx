@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BUDGET_UNSET_LABEL, formatBudgetLabel } from '../../budget/monthSettings'
 import { formatCurrency } from '../../utils/dates'
 import { btnSecondary } from '../common/Modal'
@@ -146,6 +147,13 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
   const viewBox = `${-pad} ${-pad} ${size + pad * 2} ${size + pad * 2}`
   const over = budget > 0 && spent > budget
   const usePct = budget > 0 ? Math.round((spent / budget) * 100) : 0
+  const [tooltip, setTooltip] = useState<{
+    label: string
+    amount: number
+    percent: number
+    x: number
+    y: number
+  } | null>(null)
 
   const svgProps = {
     width: size,
@@ -155,7 +163,14 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
     overflow: 'visible' as const,
   }
 
-  type Segment = { start: number; end: number; color: string }
+  type Segment = {
+    start: number
+    end: number
+    color: string
+    label: string
+    amount: number
+    percent: number
+  }
   const segments: Segment[] = []
   let cursor = 0
 
@@ -193,6 +208,9 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
         start: cursor,
         end: cursor + sweep,
         color: getSliceColor(slice.name, index, colorMode),
+        label: slice.name,
+        amount: slice.spent,
+        percent: totalSpent > 0 ? Math.round((slice.spent / totalSpent) * 100) : 0,
       })
       cursor += sweep
     })
@@ -204,6 +222,9 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
         start: cursor,
         end: cursor + sweep,
         color: getSliceColor(slice.name, index, colorMode),
+        label: slice.name,
+        amount: slice.spent,
+        percent: Math.round((slice.spent / budget) * 100),
       })
       cursor += sweep
     })
@@ -213,19 +234,49 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
         start: cursor,
         end: cursor + (remaining / budget) * 360,
         color: REMAINING_COLOR,
+        label: '남은 예산',
+        amount: remaining,
+        percent: Math.round((remaining / budget) * 100),
       })
     }
   }
 
+  const showTooltip = (
+    seg: Segment,
+    clientX: number,
+    clientY: number,
+    parentRect: DOMRect | undefined,
+    fallbackRect: DOMRect,
+  ) => {
+    setTooltip({
+      label: seg.label,
+      amount: seg.amount,
+      percent: seg.percent,
+      x: clientX - (parentRect?.left ?? fallbackRect.left),
+      y: clientY - (parentRect?.top ?? fallbackRect.top),
+    })
+  }
+
   return (
-    <div className="flex shrink-0 items-center justify-center overflow-visible">
+    <div className="relative flex shrink-0 items-center justify-center overflow-visible">
       <svg {...svgProps}>
         {segments.map((seg, i) => (
           <path
             key={i}
             d={donutSegmentPath(cx, cy, outerR, innerR, seg.start, seg.end)}
             fill={seg.color}
-            className="transition-all"
+            className="cursor-pointer transition-opacity hover:opacity-80"
+            onMouseEnter={(e) => {
+              const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect()
+              const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
+              showTooltip(seg, e.clientX, e.clientY, parentRect, rect)
+            }}
+            onMouseMove={(e) => {
+              const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
+              if (!parentRect) return
+              showTooltip(seg, e.clientX, e.clientY, parentRect, parentRect)
+            }}
+            onMouseLeave={() => setTooltip(null)}
           />
         ))}
         <text
@@ -233,11 +284,23 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
           y={cy}
           textAnchor="middle"
           dominantBaseline="middle"
-          className={`text-[13px] font-bold tabular-nums ${over ? 'fill-danger' : 'fill-text-primary'}`}
+          className={`pointer-events-none text-[13px] font-bold tabular-nums ${over ? 'fill-danger' : 'fill-text-primary'}`}
         >
           {usePct}%
         </text>
       </svg>
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 shadow-lg"
+          style={{ left: tooltip.x, top: tooltip.y - 8 }}
+        >
+          <p className="whitespace-nowrap text-xs font-medium text-text-primary">{tooltip.label}</p>
+          <p className="whitespace-nowrap text-xs tabular-nums text-text-secondary">
+            {formatCurrency(tooltip.amount)}
+            <span className="ml-1.5 text-text-muted">({tooltip.percent}%)</span>
+          </p>
+        </div>
+      )}
     </div>
   )
 }

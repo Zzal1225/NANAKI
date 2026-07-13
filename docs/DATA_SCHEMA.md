@@ -72,7 +72,19 @@ interface UserOwned {
 
 (기존과 동일 — `BudgetCategory`, `CategoryBudgetItem`, `BudgetSettings`, `Expense`)
 
-자세한 필드는 이전 문서·`src/types` 참고.
+### 무지출 일수 · 이번 주 지출
+
+```typescript
+// src/budget/noSpend.ts
+countMonthZeroSpendDays(month, expenses, today)
+// 변동 지출이 없는 날만 카운트 (고정 제외)
+// 이번 달: 1일~오늘 / 과거 달: 해당 월 전체
+
+sumThisWeekSpend(expenses)
+// 월요일 시작 주의 고정+변동 합계
+```
+
+`BudgetSettings.noSpendDates`는 수동 체크용 레거시 필드(미사용).
 
 ---
 

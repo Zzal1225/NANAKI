@@ -9,12 +9,11 @@ type BudgetSummarySectionProps = {
   totalSpent: number
   variableSpent: number
   fixedSpent: number
-  variableBudget: number
-  fixedBudget: number
   fixedExpenses: Expense[]
   showTotalSpendEmpty: boolean
   showVariableSpendEmpty: boolean
-  showTotalBudgetEmpty: boolean
+  zeroSpendDays: number
+  weekSpent: number
   onOpenSummary: (view: SummaryView) => void
 }
 
@@ -22,12 +21,11 @@ export default function BudgetSummarySection({
   totalSpent,
   variableSpent,
   fixedSpent,
-  variableBudget,
-  fixedBudget,
   fixedExpenses,
   showTotalSpendEmpty,
   showVariableSpendEmpty,
-  showTotalBudgetEmpty,
+  zeroSpendDays,
+  weekSpent,
   onOpenSummary,
 }: BudgetSummarySectionProps) {
   return (
@@ -55,18 +53,18 @@ export default function BudgetSummarySection({
           onClick={() => onOpenSummary('fixed')}
         />
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          label="변동 지출 예산"
-          value={formatCurrency(variableBudget)}
-          emptyText={showTotalBudgetEmpty ? '예산 미설정' : undefined}
-          color="text-success"
+          label="이번 달 무지출 일수"
+          value={`${zeroSpendDays}일`}
+          color="text-accent"
         />
         <StatCard
-          label="고정 지출 예산"
-          value={formatCurrency(fixedBudget)}
-          emptyText={showTotalBudgetEmpty ? '예산 미설정' : undefined}
-          color="text-budget"
+          label="이번 주 지출"
+          value={formatCurrency(weekSpent)}
+          emptyText={weekSpent === 0 ? emptySpendText : undefined}
+          color="text-accent"
         />
       </div>
     </div>

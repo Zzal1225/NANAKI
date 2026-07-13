@@ -191,17 +191,14 @@ export default function BudgetSearchPage() {
           <div className="border-b border-border px-3 py-3">
             <p className="text-sm font-semibold text-text-primary">
               합계 {formatCurrency(total)}
+              <span className="ml-1 font-medium text-text-muted">({results.length}건)</span>
             </p>
-            <p className="mt-0.5 text-xs text-text-muted">{results.length}건</p>
           </div>
 
           {results.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-text-muted">조건에 맞는 지출이 없어요.</p>
           ) : (
             <>
-              <p className="border-b border-border px-3 py-2 text-xs text-text-muted">
-                {results.length}건
-              </p>
               {shown.map((expense) => (
                 <ExpenseResultRow key={expense.id} expense={expense} />
               ))}

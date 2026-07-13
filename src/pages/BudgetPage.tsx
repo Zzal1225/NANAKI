@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react'
 import { useAsync } from '../hooks/useAsync'
 import { saveExpense, deleteExpense } from '../db'
 import { findRecurringVersionForMonth, saveFixedExpense } from '../budget/recurringFixed'
-import { currentMonth, formatMonth } from '../utils/format'
+import { currentMonth, formatMonth, todayISO } from '../utils/format'
 import type { BudgetCategory, Expense, UserOwnedInput } from '../types'
 import PageHeader from '../components/layout/PageHeader'
 import { useSections } from '../context/SectionContext'
@@ -23,6 +23,7 @@ import {
   copyBudgetFromPreviousMonth,
   hasConfiguredCategoryBudget,
 } from '../budget/monthSettings'
+import { countMonthZeroSpendDays, sumThisWeekSpend } from '../budget/noSpend'
 import ExpenseModal from '../components/budget/ExpenseModal'
 import ExpenseListModal from '../components/budget/ExpenseListModal'
 import BudgetUnsetPromptModal from '../components/budget/BudgetUnsetPromptModal'
@@ -47,6 +48,8 @@ export default function BudgetPage() {
     () => localStorage.getItem(budgetSuggestDismissKey(currentMonth())) === '1',
   )
   const [applyingBudget, setApplyingBudget] = useState(false)
+
+  const today = todayISO()
 
   const { data, reload } = useAsync(() => loadBudgetPageData(month), [month])
   const { data: prevMonthSettings } = useAsync(() => getPreviousMonthBudgetSettings(month), [month])
@@ -95,6 +98,9 @@ export default function BudgetPage() {
   const prevMonth = getPreviousMonth(month)
   const prevHasBudget = prevMonthSettings ? hasConfiguredCategoryBudget(prevMonthSettings) : false
   const showBudgetSuggest = stats.totalBudget === 0 && prevHasBudget && !budgetSuggestDismissed
+
+  const zeroSpendDays = countMonthZeroSpendDays(month, expenses, today)
+  const weekSpent = sumThisWeekSpend(allExpenses)
 
   const dismissBudgetSuggest = () => {
     localStorage.setItem(budgetSuggestDismissKey(month), '1')
@@ -169,12 +175,11 @@ export default function BudgetPage() {
           totalSpent={stats.totalSpent}
           variableSpent={stats.variableSpent}
           fixedSpent={stats.fixedSpent}
-          variableBudget={stats.variableBudget}
-          fixedBudget={stats.fixedBudget}
           fixedExpenses={stats.fixedExpenses}
           showTotalSpendEmpty={stats.showTotalSpendEmpty}
           showVariableSpendEmpty={stats.showVariableSpendEmpty}
-          showTotalBudgetEmpty={stats.showTotalBudgetEmpty}
+          zeroSpendDays={zeroSpendDays}
+          weekSpent={weekSpent}
           onOpenSummary={setSummaryView}
         />
       )}
