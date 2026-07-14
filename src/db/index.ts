@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { addDays, format, parseISO, subDays } from 'date-fns'
 import { remapExpenseToCategories } from '../budget/categoryMatch'
-import type { AppSettings, ArchiveItem, BodyPhotoRecord, BodyRecord, BudgetCategory, BudgetSettings, BloodPressureRecord, BloodSugarRecord, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, PeriodContext, PeriodRecord, SleepRecord, SupplementIntakeLog, SupplementProduct } from '../types'
+import type { AppSettings, ArchiveItem, BodyPhotoRecord, BodyRecord, BudgetCategory, BudgetSettings, BloodPressureRecord, BloodSugarRecord, ExerciseRecord, Expense, Habit, HabitLog, HospitalRecord, LifeRoutine, PantryItem, PeriodContext, PeriodRecord, SleepRecord, SupplementIntakeLog, SupplementProduct } from '../types'
 import { DEFAULT_APP_SETTINGS } from '../config/sections'
 import { migrateAppSettings } from '../config/migrateSettings'
 import { ensureUserOwned, stampUserOwned, type UserOwnedInput } from './recordDefaults'
@@ -46,6 +46,16 @@ interface NanakiDB extends DBSchema {
     key: string
     value: HabitLog
     indexes: { 'by-date': string; 'by-habit': string }
+  }
+  lifeRoutines: {
+    key: string
+    value: LifeRoutine
+    indexes: { 'by-nextDue': string; 'by-group': string }
+  }
+  pantryItems: {
+    key: string
+    value: PantryItem
+    indexes: { 'by-expires': string; 'by-name': string }
   }
   supplementProducts: {
     key: string
@@ -105,7 +115,7 @@ export type NanakiDatabase = IDBPDatabase<NanakiDB>
 
 const DB_NAME = 'nanaki-db'
 export { DB_NAME }
-const DB_VERSION = 5
+const DB_VERSION = 6
 
 let dbPromise: Promise<IDBPDatabase<NanakiDB>> | null = null
 
@@ -207,6 +217,18 @@ export function getDB() {
             const s = db.createObjectStore('supplementIntakeLogs', { keyPath: 'id' })
             s.createIndex('by-date', 'date')
             s.createIndex('by-product', 'productId')
+          }
+        }
+        if (oldVersion < 6) {
+          if (!db.objectStoreNames.contains('lifeRoutines')) {
+            const s = db.createObjectStore('lifeRoutines', { keyPath: 'id' })
+            s.createIndex('by-nextDue', 'nextDueAt')
+            s.createIndex('by-group', 'group')
+          }
+          if (!db.objectStoreNames.contains('pantryItems')) {
+            const s = db.createObjectStore('pantryItems', { keyPath: 'id' })
+            s.createIndex('by-expires', 'expiresAt')
+            s.createIndex('by-name', 'name')
           }
         }
       },
@@ -768,14 +790,58 @@ export async function toggleHabitLog(habitId: string, date: string) {
   return newLog
 }
 
+// Life — routines & pantry
+export async function getAllLifeRoutines() {
+  const db = await getDB()
+  const rows = await db.getAll('lifeRoutines')
+  return rows
+    .map((row) => ensureUserOwned(row))
+    .sort((a, b) => a.nextDueAt.localeCompare(b.nextDueAt) || a.name.localeCompare(b.name, 'ko'))
+}
+
+export async function saveLifeRoutine(record: UserOwnedInput<LifeRoutine>) {
+  await putTracked('lifeRoutines', 'lifeRoutines', record)
+}
+
+export async function deleteLifeRoutine(id: string) {
+  await deleteTracked('lifeRoutines', 'lifeRoutines', id)
+}
+
+export async function getAllPantryItems() {
+  const db = await getDB()
+  const rows = await db.getAll('pantryItems')
+  return rows
+    .map((row) => ensureUserOwned(row))
+    .sort((a, b) => a.expiresAt.localeCompare(b.expiresAt) || a.name.localeCompare(b.name, 'ko'))
+}
+
+export async function savePantryItem(record: UserOwnedInput<PantryItem>) {
+  await putTracked('pantryItems', 'pantryItems', record)
+}
+
+export async function deletePantryItem(id: string) {
+  await deleteTracked('pantryItems', 'pantryItems', id)
+}
+
 export async function getDaySummary(date: string) {
-  const [expenses, bodyRecords, bodyPhotos, archiveItems, habitLogs, habits] = await Promise.all([
+  const [
+    expenses,
+    bodyRecords,
+    bodyPhotos,
+    archiveItems,
+    habitLogs,
+    habits,
+    lifeRoutines,
+    pantryItems,
+  ] = await Promise.all([
     getExpensesByDate(date),
     getBodyRecordsByDate(date),
     getBodyPhotosByDate(date),
     getArchiveItemsByDate(date),
     getHabitLogsByDate(date),
     getAllHabits(),
+    getAllLifeRoutines(),
+    getAllPantryItems(),
   ])
 
   const habitMap = new Map(habits.map((h) => [h.id, h]))
@@ -789,6 +855,8 @@ export async function getDaySummary(date: string) {
     habitLogs: habitLogs
       .filter((l) => l.completed)
       .map((l) => ({ ...l, habit: habitMap.get(l.habitId) })),
+    lifeRoutines: lifeRoutines.filter((r) => r.nextDueAt === date),
+    pantryItems: pantryItems.filter((p) => p.expiresAt === date),
   }
 }
 

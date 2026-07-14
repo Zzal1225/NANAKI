@@ -207,6 +207,35 @@ export interface HabitLog extends UserOwned {
   completed: boolean
 }
 
+/** 생활 · 반복 관리 그룹 */
+export type LifeRoutineGroup = 'chores' | 'consumables' | 'health' | 'custom'
+
+export interface LifeRoutine extends UserOwned {
+  id: string
+  name: string
+  group: LifeRoutineGroup
+  /** 주기 (일) */
+  intervalDays: number
+  suggestedIntervalDays?: number
+  lastDoneAt?: string
+  nextDueAt: string
+  notes?: string
+}
+
+/** 생활 · 냉장고 / 소비기한 */
+export interface PantryItem extends UserOwned {
+  id: string
+  name: string
+  emoji?: string
+  purchasedAt?: string
+  expiresAt: string
+  quantity?: number
+  unit?: string
+  linkedArchiveIds?: string[]
+}
+
+export type PantryStatus = 'fresh' | 'soon' | 'expired'
+
 /** 영양 성분 — 이름·함량·단위 분리 저장 */
 export interface NutrientAmount {
   name: string
@@ -267,6 +296,8 @@ export interface DaySummary {
   bodyPhotos: BodyPhotoRecord[]
   archiveItems: ArchiveItem[]
   habitLogs: (HabitLog & { habit?: Habit })[]
+  lifeRoutines: LifeRoutine[]
+  pantryItems: PantryItem[]
 }
 
 export interface PeriodContext {
@@ -286,6 +317,7 @@ export type SearchResultType =
   | 'body'
   | 'bodyPhoto'
   | 'supplement'
+  | 'life'
   | 'habit'
 
 export interface ExpenseSearchStats {
@@ -305,7 +337,7 @@ export interface SearchResult {
   path: string
 }
 
-export type TabId = 'home' | 'budget' | 'health' | 'records' | 'habits'
+export type TabId = 'home' | 'budget' | 'health' | 'life' | 'records' | 'habits'
 
 export type SectionId =
   | 'budget-summary'
@@ -314,6 +346,9 @@ export type SectionId =
   | 'body-photo'
   | 'body-intervals'
   | 'supplements-summary'
+  | 'life-routines'
+  | 'life-pantry'
+  | 'life-purchase-cycles'
   | 'records-search'
   | 'records-list'
   | 'habits-checklist'

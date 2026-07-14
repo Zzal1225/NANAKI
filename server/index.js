@@ -10,6 +10,7 @@ const PORT = process.env.SYNC_PORT ? Number(process.env.SYNC_PORT) : 3001
 
 const SYNC_STORES = [
   'budgetSettings', 'expenses', 'bodyRecords', 'archiveItems', 'habits', 'habitLogs',
+  'lifeRoutines', 'pantryItems',
   'supplementProducts', 'supplementIntakeLogs',
   'periodRecords', 'bpRecords', 'sugarRecords', 'sleepRecords', 'hospitalRecords',
   'exerciseRecords',

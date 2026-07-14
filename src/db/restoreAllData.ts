@@ -9,6 +9,8 @@ const USER_STORES = [
   'archiveItems',
   'habits',
   'habitLogs',
+  'lifeRoutines',
+  'pantryItems',
   'supplementProducts',
   'supplementIntakeLogs',
   'periodRecords',
@@ -38,6 +40,8 @@ export async function restoreAllNanakiData(payload: NanakiDataPayload) {
   for (const item of payload.archiveItems) await tx.objectStore('archiveItems').put(item)
   for (const item of payload.habits) await tx.objectStore('habits').put(item)
   for (const item of payload.habitLogs) await tx.objectStore('habitLogs').put(item)
+  for (const item of payload.lifeRoutines ?? []) await tx.objectStore('lifeRoutines').put(item)
+  for (const item of payload.pantryItems ?? []) await tx.objectStore('pantryItems').put(item)
   for (const item of payload.supplementProducts ?? []) {
     await tx.objectStore('supplementProducts').put(item)
   }

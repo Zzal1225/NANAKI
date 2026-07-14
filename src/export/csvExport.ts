@@ -332,6 +332,8 @@ function rowsToPayload(rows: string[][]): NanakiDataPayload {
     exerciseRecords: [],
     supplementProducts: [],
     supplementIntakeLogs: [],
+    lifeRoutines: [],
+    pantryItems: [],
   }
 
   const header = rows[0]?.map((h) => h.trim()) ?? []

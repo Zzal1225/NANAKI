@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Calendar, {
   useCalendarState,
   type DayBadge,
@@ -9,6 +9,7 @@ import HomeAnalyticsView from '../components/dashboard/HomeAnalyticsView';
 import GlobalSearch from '../components/search/GlobalSearch';
 import TimelineView from '../components/timeline/TimelineView';
 import PageHeader from '../components/layout/PageHeader';
+import MonthNav from '../components/layout/MonthNav';
 import { useAsync } from '../hooks/useAsync';
 import { useSections } from '../context/SectionContext';
 import { loadHomeAnalytics } from '../home/homeAnalytics';
@@ -21,9 +22,21 @@ import {
   getExpensesByMonth,
   getHabitLogsInRange,
   getAllHabits,
+  getAllLifeRoutines,
+  getAllPantryItems,
 } from '../db';
+import { getHomeDataStartMonth } from '../utils/dataStartMonth';
 
 type HomeView = 'calendar' | 'analytics';
+
+function monthFromYearMonth(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function parseYearMonth(monthStr: string): { year: number; month: number } {
+  const [y, m] = monthStr.split('-').map(Number);
+  return { year: y, month: m };
+}
 
 async function loadMonthBadges(
   year: number,
@@ -37,6 +50,8 @@ async function loadMonthBadges(
     archiveItems,
     habitLogs,
     habits,
+    lifeRoutines,
+    pantryItems,
   ] = await Promise.all([
     getExpensesByMonth(monthStr),
     getAllBodyRecords(),
@@ -44,6 +59,8 @@ async function loadMonthBadges(
     getAllArchiveItems(),
     getHabitLogsInRange(`${monthStr}-01`, `${monthStr}-31`),
     getAllHabits(),
+    getAllLifeRoutines(),
+    getAllPantryItems(),
   ]);
 
   const habitMap = new Map(habits.map((h) => [h.id, h]));
@@ -74,6 +91,12 @@ async function loadMonthBadges(
       if (!b.habitEmojis.includes(emoji)) b.habitEmojis.push(emoji);
     }
   }
+  for (const r of lifeRoutines) {
+    if (r.nextDueAt.startsWith(monthStr)) ensure(r.nextDueAt).hasLifeRoutine = true;
+  }
+  for (const p of pantryItems) {
+    if (p.expiresAt.startsWith(monthStr)) ensure(p.expiresAt).hasPantryExpiry = true;
+  }
 
   return badges;
 }
@@ -83,6 +106,15 @@ export default function HomePage() {
   const [view, setView] = useState<HomeView>('calendar');
   const { year, month, selectedDate, setSelectedDate, setMonthYear } =
     useCalendarState();
+  const monthStr = monthFromYearMonth(year, month);
+  const { data: startMonth } = useAsync(() => getHomeDataStartMonth(), []);
+
+  useEffect(() => {
+    if (startMonth && monthStr < startMonth) {
+      const { year: y, month: m } = parseYearMonth(startMonth);
+      setMonthYear(y, m);
+    }
+  }, [startMonth, monthStr, setMonthYear]);
 
   const { data: badges, reload: reloadBadges } = useAsync(
     () => loadMonthBadges(year, month),
@@ -116,16 +148,33 @@ export default function HomePage() {
 
   return (
     <div className='flex flex-col gap-5'>
-      <PageHeader title="Nanaki" tab="home" />
-
-      <SegmentedControl
-        value={view}
-        onChange={setView}
-        options={[
-          { value: 'calendar', label: '달력보기', icon: '📅' },
-          { value: 'analytics', label: '분석보기', icon: '📊' },
-        ]}
-      />
+      <PageHeader
+        title="홈"
+        tab="home"
+        trailing={
+          <SegmentedControl
+            compact
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'calendar', label: '달력', icon: '📅' },
+              { value: 'analytics', label: '분석', icon: '📊' },
+            ]}
+          />
+        }
+      >
+        <MonthNav
+          month={monthStr}
+          minMonth={startMonth ?? undefined}
+          onChange={(next) => {
+            if (startMonth && next < startMonth) return;
+            const { year: y, month: m } = parseYearMonth(next);
+            setMonthYear(y, m);
+            reloadBadges();
+            reloadDay();
+          }}
+        />
+      </PageHeader>
 
       {view === 'calendar' ? (
         <div key="calendar" className="home-view-enter-left flex flex-col gap-5">
@@ -135,11 +184,6 @@ export default function HomePage() {
             <Calendar
               year={year}
               month={month}
-              onMonthChange={(y, m) => {
-                setMonthYear(y, m);
-                reloadBadges();
-                reloadDay();
-              }}
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
               badges={badgeMap}

@@ -65,6 +65,8 @@ function validatePayload(data: unknown): NanakiDataPayload {
   // v5 이후 추가 — 구버전 백업 호환
   if (!Array.isArray(payload.supplementProducts)) payload.supplementProducts = []
   if (!Array.isArray(payload.supplementIntakeLogs)) payload.supplementIntakeLogs = []
+  if (!Array.isArray(payload.lifeRoutines)) payload.lifeRoutines = []
+  if (!Array.isArray(payload.pantryItems)) payload.pantryItems = []
   if (!payload.appSettings) throw new Error('백업에 앱 설정이 없습니다.')
   return payload as NanakiDataPayload
 }

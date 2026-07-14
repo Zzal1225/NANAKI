@@ -40,9 +40,21 @@ export function migrateAppSettings(raw: AppSettings): AppSettings {
     ),
   ]
 
-  // 기존 체형 사용자에게 영양제 섹션 기본 ON
+  // 기존 사용자에게 영양제·생활 섹션/탭 기본 ON
   if (!enabledSections.includes('supplements-summary')) {
     enabledSections.push('supplements-summary')
+  }
+  if (!enabledSections.includes('life-routines')) {
+    enabledSections.push('life-routines')
+  }
+  if (!enabledSections.includes('life-pantry')) {
+    enabledSections.push('life-pantry')
+  }
+  if (!enabledSections.includes('life-purchase-cycles')) {
+    enabledSections.push('life-purchase-cycles')
+  }
+  if (!enabledTabs.includes('life')) {
+    enabledTabs.push('life')
   }
 
   return {

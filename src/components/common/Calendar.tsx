@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { getCalendarGrid } from '../../utils/dates'
@@ -10,13 +9,16 @@ export interface DayBadge {
   hasBody?: boolean
   hasBodyPhoto?: boolean
   hasArchive?: boolean
+  /** 반복 예정일 */
+  hasLifeRoutine?: boolean
+  /** 냉장고 유통기한일 */
+  hasPantryExpiry?: boolean
   habitEmojis?: string[]
 }
 
 interface CalendarProps {
   year: number
   month: number
-  onMonthChange: (year: number, month: number) => void
   selectedDate: string | null
   onSelectDate: (date: string) => void
   badges: Map<string, DayBadge>
@@ -27,7 +29,6 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 export default function Calendar({
   year,
   month,
-  onMonthChange,
   selectedDate,
   onSelectDate,
   badges,
@@ -35,28 +36,12 @@ export default function Calendar({
   const grid = useMemo(() => getCalendarGrid(year, month), [year, month])
   const today = format(new Date(), 'yyyy-MM-dd')
 
-  const prevMonth = () => {
-    if (month === 1) onMonthChange(year - 1, 12)
-    else onMonthChange(year, month - 1)
-  }
-
-  const nextMonth = () => {
-    if (month === 12) onMonthChange(year + 1, 1)
-    else onMonthChange(year, month + 1)
-  }
-
   return (
     <div className="rounded-2xl border border-border bg-surface-raised p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <button onClick={prevMonth} className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-overlay">
-          <ChevronLeft size={20} />
-        </button>
+      <div className="mb-4 flex items-center justify-center">
         <h2 className="text-base font-bold">
           {format(new Date(year, month - 1), 'yyyy년 M월', { locale: ko })}
         </h2>
-        <button onClick={nextMonth} className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-overlay">
-          <ChevronRight size={20} />
-        </button>
       </div>
 
       <div className="mb-2 grid grid-cols-7 gap-1">
@@ -108,6 +93,12 @@ export default function Calendar({
                   {badge.hasBodyPhoto && (
                     <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-accent'}`} />
                   )}
+                  {badge.hasLifeRoutine && (
+                    <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-life'}`} />
+                  )}
+                  {badge.hasPantryExpiry && (
+                    <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-surface' : 'bg-warning'}`} />
+                  )}
                   {badge.habitEmojis?.slice(0, 2).map((emoji, j) => (
                     <span key={j} className="text-[8px] leading-none">{emoji}</span>
                   ))}
@@ -122,6 +113,8 @@ export default function Calendar({
         <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-budget" /> 가계부</span>
         <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-body" /> 체형</span>
         <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-archive" /> 기록</span>
+        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-life" /> 반복</span>
+        <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> 기한</span>
         <span>😊 습관</span>
       </div>
     </div>
@@ -134,10 +127,10 @@ export function useCalendarState(initialYear?: number, initialMonth?: number) {
   const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(format(now, 'yyyy-MM-dd'))
 
-  const setMonthYear = (y: number, m: number) => {
+  const setMonthYear = useCallback((y: number, m: number) => {
     setYear(y)
     setMonth(m)
-  }
+  }, [])
 
   return { year, month, selectedDate, setSelectedDate, setMonthYear }
 }

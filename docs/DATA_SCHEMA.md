@@ -1,6 +1,6 @@
 # 데이터 스키마
 
-Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, **v5**)에 저장됩니다.  
+Nanaki의 모든 사용자 데이터는 브라우저 **IndexedDB** (`nanaki-db`, **v6**)에 저장됩니다.  
 타입 정의 원본: `src/types/index.ts`
 
 > **멀티 사용자 전제**: Phase 1–3에서는 실제 로그인 없이 `userId: 'local-user'`를 사용합니다.  
@@ -35,6 +35,8 @@ interface UserOwned {
 | `archiveItems` | `id` | `by-date`, `by-type` | 기록 |
 | `habits` | `id` | — | 습관 정의 |
 | `habitLogs` | `id` | `by-date`, `by-habit` | 습관 체크 |
+| `lifeRoutines` | `id` | `by-nextDue`, `by-group` | 생활 · 반복 관리 (v6) |
+| `pantryItems` | `id` | `by-expires`, `by-name` | 생활 · 냉장고/기한 (v6) |
 | `appSettings` | `id` | — | 앱 전역 설정 |
 | `syncQueue` | `id` | `by-synced` | 동기화 큐 |
 | `syncConfig` | `id` | — | 동기화 설정 |
@@ -54,8 +56,10 @@ interface UserOwned {
 
 ## 탭 · 섹션
 
-탭: `home` · `budget` · `health` · `records` · `habits`  
+탭: `home`(상단 🏠) · `budget` · `health` · `life` · `records` · `habits`  
 (구 `body` / `mybody` → `health` 로 마이그레이션)
+
+하단 탭 5개: 가계부 · 건강 · 생활 · 기록 · 습관
 
 건강 탭 섹션:
 
@@ -65,6 +69,14 @@ interface UserOwned {
 | `body-photo` | 체형 | 눈바디 |
 | `body-intervals` | 체형 | 측정 주기 |
 | `supplements-summary` | 영양제 | 요약 + 복용 캘린더 → `/health/supplements` |
+
+생활 탭 섹션 · 스키마: [LIFE_TAB.md](./LIFE_TAB.md)
+
+| SectionId | 그룹 | 내용 |
+|-----------|------|------|
+| `life-routines` | 생활 | 반복 관리 |
+| `life-pantry` | 생활 | 냉장고 · 소비기한 |
+| `life-purchase-cycles` | 생활 | 구매 주기 분석 (가계부 집계) |
 
 ---
 
@@ -224,8 +236,9 @@ rate      = expected === 0 ? 0 : round(completed / expected * 100)
 
 ## 검색
 
-결과 타입: `records` | `expense` | `body` | `bodyPhoto` | `supplement` | `habit`  
-영양제: 제품명 · 성분 · 구매처 · 가격 → `/health/supplements`
+결과 타입: `records` | `expense` | `body` | `bodyPhoto` | `supplement` | `life` | `habit`  
+영양제: 제품명 · 성분 · 구매처 · 가격 → `/health/supplements`  
+생활: 반복 항목명 · 냉장고 이름 → `/life`
 
 ---
 
@@ -235,4 +248,5 @@ rate      = expected === 0 ? 0 : round(completed / expected * 100)
 |------|------|
 | TabId `body` / path `/body` | `health` / `/health` |
 | DB v4 | DB v5 (`supplementProducts`, `supplementIntakeLogs`) |
+| DB v5 | DB v6 (`lifeRoutines`, `pantryItems`) |
 | `BodyRecord.inbody` | UI 미사용 |

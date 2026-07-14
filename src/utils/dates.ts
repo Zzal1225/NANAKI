@@ -9,9 +9,24 @@ export function currentMonth() {
   return format(new Date(), 'yyyy-MM')
 }
 
+/** YYYY-MM 기준 delta개월 이동 */
+export function shiftMonth(month: string, delta: number) {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 /** 가계부 월 이동 상한 — 이번 달 포함 +3개월 */
 export function maxBudgetMonth() {
   return format(addMonths(new Date(), 3), 'yyyy-MM')
+}
+
+/** 해당 월의 오늘(현재 월) 또는 1일 */
+export function clampDateToMonth(date: string, month: string) {
+  if (date.startsWith(month)) return date
+  const today = todayISO()
+  if (today.startsWith(month)) return today
+  return `${month}-01`
 }
 
 export function formatDate(date: string, pattern = 'M월 d일 (EEE)') {

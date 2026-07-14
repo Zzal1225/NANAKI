@@ -1,6 +1,8 @@
 import type { DaySummary } from '../../types'
 import { formatCurrency, formatDate, ARCHIVE_TYPE_LABELS } from '../../utils/dates'
 import { Card, CardTitle } from '../common/Card'
+import { formatIntervalLabel } from '../../life/nextDue'
+import { getPantryStatus, PANTRY_STATUS_META } from '../../life/pantryStatus'
 
 interface DayDetailProps {
   summary: DaySummary | null
@@ -24,7 +26,9 @@ export default function DayDetail({ summary, loading }: DayDetailProps) {
     summary.bodyRecords.length === 0 &&
     summary.bodyPhotos.length === 0 &&
     summary.archiveItems.length === 0 &&
-    summary.habitLogs.length === 0
+    summary.habitLogs.length === 0 &&
+    summary.lifeRoutines.length === 0 &&
+    summary.pantryItems.length === 0
 
   return (
     <Card>
@@ -75,7 +79,9 @@ export default function DayDetail({ summary, loading }: DayDetailProps) {
                 <div key={r.id} className="text-sm text-text-secondary">
                   {r.weight != null && <span>체중 {r.weight}kg</span>}
                   {r.bodyFat != null && <span className="ml-2">체지방 {r.bodyFat}%</span>}
-                  {r.measurements?.waist != null && <span className="ml-2">허리 {r.measurements.waist}cm</span>}
+                  {r.measurements?.waist != null && (
+                    <span className="ml-2">허리 {r.measurements.waist}cm</span>
+                  )}
                 </div>
               ))}
             </Block>
@@ -92,9 +98,44 @@ export default function DayDetail({ summary, loading }: DayDetailProps) {
               <ul className="flex flex-col gap-1.5">
                 {summary.archiveItems.map((item) => (
                   <li key={item.id} className="text-sm">
-                    <span className="text-text-muted">[{ARCHIVE_TYPE_LABELS[item.type]}]</span> {item.title}
+                    <span className="text-text-muted">[{ARCHIVE_TYPE_LABELS[item.type]}]</span>{' '}
+                    {item.title}
                   </li>
                 ))}
+              </ul>
+            </Block>
+          )}
+
+          {summary.lifeRoutines.length > 0 && (
+            <Block title="반복 예정" color="text-life">
+              <ul className="flex flex-col gap-1.5">
+                {summary.lifeRoutines.map((r) => (
+                  <li key={r.id} className="text-sm text-text-secondary">
+                    {r.name}
+                    <span className="ml-1 text-xs text-text-muted">
+                      · {formatIntervalLabel(r.intervalDays)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          )}
+
+          {summary.pantryItems.length > 0 && (
+            <Block title="유통기한" color="text-warning">
+              <ul className="flex flex-col gap-1.5">
+                {summary.pantryItems.map((p) => {
+                  const meta = PANTRY_STATUS_META[getPantryStatus(p.expiresAt)]
+                  return (
+                    <li key={p.id} className="text-sm text-text-secondary">
+                      {p.emoji ? `${p.emoji} ` : ''}
+                      {p.name}
+                      <span className={`ml-1 text-xs ${meta.className}`}>
+                        {meta.emoji} {meta.label}
+                      </span>
+                    </li>
+                  )
+                })}
               </ul>
             </Block>
           )}

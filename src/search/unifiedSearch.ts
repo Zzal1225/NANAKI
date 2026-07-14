@@ -6,8 +6,18 @@ import {
   getAllBudgetSettings,
   getAllExpenses,
   getAllHabits,
+  getAllLifeRoutines,
+  getAllPantryItems,
   getAllSupplementProducts,
 } from '../db'
+import { formatIntervalLabel } from '../life/nextDue'
+import {
+  daysUntilExpiry,
+  formatRemainingDays,
+  getPantryStatus,
+  PANTRY_STATUS_META,
+} from '../life/pantryStatus'
+import { ROUTINE_GROUP_LABELS } from '../life/templates'
 import { formatCurrency } from '../utils/dates'
 import { ARCHIVE_TYPE_LABELS } from '../utils/dates'
 import { SEARCH_TYPE_LABELS } from '../config/sections'
@@ -23,16 +33,27 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
 
   const results: SearchResult[] = []
 
-  const [archives, expenses, budgetSettings, bodies, bodyPhotos, habits, supplements] =
-    await Promise.all([
-      getAllArchiveItems(),
-      getAllExpenses(),
-      getAllBudgetSettings(),
-      getAllBodyRecords(),
-      getAllBodyPhotos(),
-      getAllHabits(),
-      getAllSupplementProducts(),
-    ])
+  const [
+    archives,
+    expenses,
+    budgetSettings,
+    bodies,
+    bodyPhotos,
+    habits,
+    supplements,
+    lifeRoutines,
+    pantryItems,
+  ] = await Promise.all([
+    getAllArchiveItems(),
+    getAllExpenses(),
+    getAllBudgetSettings(),
+    getAllBodyRecords(),
+    getAllBodyPhotos(),
+    getAllHabits(),
+    getAllSupplementProducts(),
+    getAllLifeRoutines(),
+    getAllPantryItems(),
+  ])
 
   for (const item of archives) {
     if (matches(q, item.title, item.memo, item.location, ...item.tags)) {
@@ -152,6 +173,35 @@ export async function unifiedSearch(query: string): Promise<SearchResult[]> {
         subtitle: h.type === 'good' ? '좋은 습관' : '나쁜 습관',
         date: h.createdAt.slice(0, 10),
         path: '/habits',
+      })
+    }
+  }
+
+  for (const r of lifeRoutines) {
+    if (matches(q, r.name, r.notes, ROUTINE_GROUP_LABELS[r.group], '반복', '생활')) {
+      results.push({
+        id: r.id,
+        type: 'life',
+        title: r.name,
+        subtitle: `${ROUTINE_GROUP_LABELS[r.group]} · ${formatIntervalLabel(r.intervalDays)} · 다음 ${r.nextDueAt}`,
+        date: r.nextDueAt,
+        path: '/life',
+      })
+    }
+  }
+
+  for (const p of pantryItems) {
+    if (matches(q, p.name, p.emoji, p.unit, '냉장고', '유통기한', '생활')) {
+      const status = getPantryStatus(p.expiresAt)
+      const meta = PANTRY_STATUS_META[status]
+      const days = daysUntilExpiry(p.expiresAt)
+      results.push({
+        id: p.id,
+        type: 'life',
+        title: `${p.emoji ? `${p.emoji} ` : ''}${p.name}`,
+        subtitle: `${formatRemainingDays(days)} · ${meta.emoji} ${meta.label}`,
+        date: p.expiresAt,
+        path: '/life',
       })
     }
   }

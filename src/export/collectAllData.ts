@@ -7,6 +7,8 @@ import {
   getAllExpenses,
   getAllHabits,
   getAllHospitalRecords,
+  getAllLifeRoutines,
+  getAllPantryItems,
   getAllPeriodRecords,
   getAllSleepRecords,
   getAllSugarRecords,
@@ -27,6 +29,8 @@ import type {
   Habit,
   HabitLog,
   HospitalRecord,
+  LifeRoutine,
+  PantryItem,
   PeriodRecord,
   SleepRecord,
   SupplementIntakeLog,
@@ -41,6 +45,8 @@ export interface NanakiDataPayload {
   archiveItems: ArchiveItem[]
   habits: Habit[]
   habitLogs: HabitLog[]
+  lifeRoutines: LifeRoutine[]
+  pantryItems: PantryItem[]
   supplementProducts: SupplementProduct[]
   supplementIntakeLogs: SupplementIntakeLog[]
   periodRecords: PeriodRecord[]
@@ -60,6 +66,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     archiveItems,
     habits,
     habitLogs,
+    lifeRoutines,
+    pantryItems,
     supplementProducts,
     supplementIntakeLogs,
     periodRecords,
@@ -76,6 +84,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     getAllArchiveItems(),
     getAllHabits(),
     getHabitLogsInRange('0000-01-01', '9999-12-31'),
+    getAllLifeRoutines(),
+    getAllPantryItems(),
     getAllSupplementProducts(),
     getAllSupplementIntakeLogs(),
     getAllPeriodRecords(),
@@ -94,6 +104,8 @@ export async function collectAllNanakiData(): Promise<NanakiDataPayload> {
     archiveItems,
     habits,
     habitLogs,
+    lifeRoutines,
+    pantryItems,
     supplementProducts,
     supplementIntakeLogs,
     periodRecords,

@@ -29,11 +29,14 @@ Supabase 연동
 |------|------|------|
 | 가계부 MVP | 예산 · 고정/변동 · 반복 · 차트 · 검색 | ✅ |
 | 체형 MVP | 체중 · 둘레 · 측정주기 · 눈바디 (건강 탭 체형 섹션) | ✅ |
-| **건강 · 영양제 MVP** | 성분 합산 · 재구매 · 복용캘린더 · 복용률 | ✅ **현재** |
+| **건강 · 영양제 MVP** | 성분 합산 · 재구매 · 복용캘린더 · 복용률 | ✅ |
 | 코드 품질 | BudgetPage 분리 · ESLint/Prettier · README | ✅ |
+| **생활 탭 스펙** | 반복 관리 · 냉장고/기한 · 검색 연동 | ✅ |
 | **기록 MVP** | 검색 · 유형 · (추후 활동) | 🔜 **다음** |
+| **생활 MVP** | 스펙 구현 ([LIFE_TAB.md](./LIFE_TAB.md)) | ✅ |
+| **생활 2차** | 구매 주기 · 홈 뱃지 · 기록 링크 · 알림 | ✅ |
 | 습관 MVP | 일일 체크 · 점수 | 🔜 |
-| 홈 대시보드 | 캘린더 · 분석 · 통합 검색 | 🔜 |
+| 홈 대시보드 | 캘린더 · 분석 · 통합 검색 (상단 🏠) | 🔜 |
 | PWA 배포 | Netlify · install | 🔜 |
 | UX 개선 | 실사용 피드백 · 무소비 등 | 🔜 |
 | Supabase | 테이블 · RLS | 🔜 |
@@ -118,6 +121,10 @@ feat: 기록 탭 추가
 - [x] 가계부
 - [x] 건강 (체형 섹션 + 영양제)
 - [x] 코드 품질 (컴포넌트 분리 · ESLint/Prettier · Architecture README)
+- [x] 네비: 상단 Nanaki+홈 아이콘 · 하단 5탭 (생활 포함)
+- [x] 생활 탭 스펙 초안 ([LIFE_TAB.md](./LIFE_TAB.md))
+- [x] 생활 MVP (반복 · 냉장고 · 검색 `life`)
+- [x] 생활 2차 (구매 주기 · 홈 뱃지 · 기록 링크 · 알림)
 - [ ] 기록 (검색 · 유형 · 활동 통합 예정)
 - [ ] 습관
 - [ ] 홈 대시보드
@@ -148,6 +155,7 @@ feat: 기록 탭 추가
 ## 관련 문서
 
 - [DATA_SCHEMA.md](./DATA_SCHEMA.md) — IndexedDB · 타입 정의
+- [LIFE_TAB.md](./LIFE_TAB.md) — 생활 탭 스펙
 - [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) — UI 패턴
 - [SCREENSHOTS.md](./SCREENSHOTS.md) — README 스크린샷 체크리스트
 - [../README.md](../README.md) — 실행 · 아키텍처

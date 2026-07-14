@@ -1,22 +1,30 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Search } from 'lucide-react'
+import { ArrowLeft, Home, Plus, Search } from 'lucide-react'
 import SectionSettings from '../settings/SectionSettings'
 import type { TabId } from '../../types'
+
+/** 헤더 우측 아이콘 버튼 (검색·설정) — 컴팩트 */
+export const headerIconBtnClass =
+  'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-accent/50 hover:text-text-primary'
+
+/** 헤더 추가 버튼 — 컴팩트 */
+export const headerAddBtnClass =
+  'inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-surface transition-transform active:scale-[0.96] hover:bg-accent-dim'
 
 interface PageHeaderProps {
   title: string
   subtitle?: string
   tab: TabId
-  /** 검색 이동 경로 (기본: 탭별 검색) */
   searchTo?: string
-  /** 검색 버튼 숨김 (검색 페이지 등) */
   hideSearch?: boolean
-  /** 뒤로가기 링크 */
+  hideAdd?: boolean
+  onAdd?: () => void
   backTo?: string
-  /** 우측 추가 버튼 (추가, 월 이동 등) */
   actions?: ReactNode
-  /** 타이틀 아래 추가 UI (월 선택 등) */
+  /** 홈 등: 우측 커스텀 (달력/분석 토글) */
+  trailing?: ReactNode
+  /** 헤더 아래(구분선 밖) 월 선택 등 */
   children?: ReactNode
 }
 
@@ -25,56 +33,110 @@ function searchPathForTab(tab: TabId): string {
   return '/search'
 }
 
+/**
+ * 단일 행 헤더
+ * - 홈: [Nanaki + 홈] [토글]
+ * - 그 외: [탭 제목 + 홈] [검색 · 설정 · 추가]
+ */
 export default function PageHeader({
   title,
   subtitle,
   tab,
   hideSearch = false,
+  hideAdd = false,
+  onAdd,
   searchTo,
   backTo,
   actions,
+  trailing,
   children,
 }: PageHeaderProps) {
   const navigate = useNavigate()
+  const isHome = tab === 'home'
 
   return (
-    <header className="flex min-h-[4.25rem] items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex h-7 items-center gap-2">
-          {backTo && (
+    <>
+      <header className="sticky top-0 z-40 -mx-4 border-b border-border bg-surface/95 px-4 py-2.5 backdrop-blur-lg">
+        <div className="flex h-9 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            {backTo && (
+              <Link
+                to={backTo}
+                className="-ml-1 shrink-0 rounded-lg p-1 text-text-muted hover:bg-surface-overlay hover:text-text-primary"
+                aria-label="뒤로"
+              >
+                <ArrowLeft size={18} />
+              </Link>
+            )}
+
+            {isHome ? (
+              <Link
+                to="/"
+                className="truncate text-lg font-bold tracking-tight text-text-primary hover:text-accent"
+              >
+                Nanaki
+              </Link>
+            ) : (
+              <h1 className="truncate text-lg font-bold tracking-tight">{title}</h1>
+            )}
+
+            {subtitle && !isHome && (
+              <span className="hidden truncate text-xs text-text-muted sm:inline">{subtitle}</span>
+            )}
+
             <Link
-              to={backTo}
-              className="-ml-1.5 shrink-0 rounded-lg p-1.5 text-text-muted hover:bg-surface-overlay hover:text-text-primary"
-              aria-label="뒤로"
+              to="/"
+              aria-label="홈"
+              title="홈"
+              className={`shrink-0 rounded-lg p-1.5 transition-colors ${
+                isHome
+                  ? 'text-accent'
+                  : 'text-text-muted hover:bg-surface-overlay hover:text-text-primary'
+              }`}
             >
-              <ArrowLeft size={20} />
+              <Home size={18} strokeWidth={2} />
             </Link>
-          )}
-          <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+          </div>
+
+          <div className="flex min-w-0 shrink-0 items-center gap-1">
+            {trailing ? (
+              trailing
+            ) : (
+              <>
+                {!hideSearch && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(searchTo ?? searchPathForTab(tab))}
+                    className={headerIconBtnClass}
+                    title="검색"
+                    aria-label="검색"
+                  >
+                    <Search size={15} strokeWidth={2} />
+                  </button>
+                )}
+                <SectionSettings tab={isHome ? undefined : tab} compact />
+                {!hideAdd && (
+                  <button
+                    type="button"
+                    onClick={onAdd}
+                    disabled={!onAdd}
+                    className={`${headerAddBtnClass} disabled:cursor-not-allowed disabled:opacity-40`}
+                    title="추가"
+                    aria-label="추가"
+                  >
+                    <Plus size={15} strokeWidth={2.5} />
+                  </button>
+                )}
+                {actions}
+              </>
+            )}
+          </div>
         </div>
-        <div className="mt-0.5 min-h-5">
-          {subtitle ? (
-            <p className="text-sm text-text-secondary">{subtitle}</p>
-          ) : (
-            children
-          )}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {!hideSearch && (
-          <button
-            type="button"
-            onClick={() => navigate(searchTo ?? searchPathForTab(tab))}
-            className="rounded-xl border border-border p-2.5 text-text-secondary hover:border-accent/50 hover:text-text-primary"
-            title="검색"
-            aria-label="검색"
-          >
-            <Search size={18} />
-          </button>
-        )}
-        <SectionSettings tab={tab === 'home' ? undefined : tab} />
-        {actions}
-      </div>
-    </header>
+      </header>
+
+      {children && (
+        <div className="flex items-center justify-center py-2.5">{children}</div>
+      )}
+    </>
   )
 }

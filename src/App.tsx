@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
 import BudgetPage from './pages/BudgetPage'
 import HealthPage from './pages/HealthPage'
+import LifePage from './pages/LifePage'
 import SupplementsPage from './pages/SupplementsPage'
 import ArchivePage from './pages/ArchivePage'
 import HabitsPage from './pages/HabitsPage'
@@ -24,6 +25,7 @@ export default function App() {
               <Route path="/budget" element={<BudgetPage />} />
               <Route path="/health" element={<HealthPage />} />
               <Route path="/health/supplements" element={<SupplementsPage />} />
+              <Route path="/life" element={<LifePage />} />
               <Route path="/body" element={<Navigate to="/health" replace />} />
               <Route path="/mybody" element={<Navigate to="/health" replace />} />
               <Route path="/records" element={<ArchivePage />} />
