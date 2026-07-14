@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { saveExpense, deleteExpense } from '../db'
 import { findRecurringVersionForMonth, saveFixedExpense } from '../budget/recurringFixed'
-import { currentMonth, formatMonth, todayISO } from '../utils/format'
+import { currentMonth, todayISO } from '../utils/format'
 import type { BudgetCategory, Expense, UserOwnedInput } from '../types'
 import PageHeader from '../components/layout/PageHeader'
 import { useSections } from '../context/SectionContext'
@@ -14,7 +14,10 @@ import {
   type PendingFixedSave,
   type SummaryView,
 } from '../budget/budgetPageTypes'
-import { canShiftBudgetMonth, shiftBudgetMonth } from '../budget/changeBudgetMonth'
+import MonthNav from '../components/layout/MonthNav'
+import { maxBudgetMonth } from '../utils/dates'
+import { useMonthScope } from '../hooks/useMonthScope'
+import { getBudgetDataStartMonth } from '../utils/dataStartMonth'
 import {
   saveMonthCategoryBudget,
   isCategoryBudgetUnset,
@@ -24,6 +27,8 @@ import {
   hasConfiguredCategoryBudget,
 } from '../budget/monthSettings'
 import { countMonthZeroSpendDays, sumThisWeekSpend } from '../budget/noSpend'
+import { buildSummaryTrends } from '../budget/summaryTrends'
+import { getExpensesByMonth } from '../db'
 import ExpenseModal from '../components/budget/ExpenseModal'
 import ExpenseListModal from '../components/budget/ExpenseListModal'
 import BudgetUnsetPromptModal from '../components/budget/BudgetUnsetPromptModal'
@@ -34,7 +39,11 @@ import BudgetCategorySection from '../components/budget/BudgetCategorySection'
 
 export default function BudgetPage() {
   const { isSectionEnabled } = useSections()
-  const [month, setMonth] = useState(currentMonth())
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { month, setMonth, minMonth } = useMonthScope({
+    getStartMonth: getBudgetDataStartMonth,
+    maxMonth: maxBudgetMonth(),
+  })
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [editExpense, setEditExpense] = useState<UserOwnedInput<Expense> | null>(null)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -53,11 +62,24 @@ export default function BudgetPage() {
 
   const { data, reload } = useAsync(() => loadBudgetPageData(month), [month])
   const { data: prevMonthSettings } = useAsync(() => getPreviousMonthBudgetSettings(month), [month])
+  const { data: prevMonthExpenses } = useAsync(
+    () => getExpensesByMonth(getPreviousMonth(month)),
+    [month],
+  )
 
   useEffect(() => {
     setExpenseListCategory(null)
     setBudgetSuggestDismissed(localStorage.getItem(budgetSuggestDismissKey(month)) === '1')
   }, [month])
+
+  useEffect(() => {
+    if (searchParams.get('add') !== '1') return
+    setEditExpense(null)
+    setShowExpenseModal(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('add')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const openExpenseModal = (expense?: Expense) => {
     if (expense?.type === 'fixed' && (expense.isRecurringMonthly ?? !!expense.recurringTemplateId)) {
@@ -91,7 +113,7 @@ export default function BudgetPage() {
     return <div className="text-text-muted">불러오는 중...</div>
   }
 
-  const { settings, expenses, allExpenses, startMonth } = data
+  const { settings, expenses, allExpenses } = data
   const stats = computeBudgetPageStats(settings, expenses)
   const categoryModal = computeCategoryModalStats(expenses, expenseListCategory, settings.budgetItems)
 
@@ -101,6 +123,15 @@ export default function BudgetPage() {
 
   const zeroSpendDays = countMonthZeroSpendDays(month, expenses, today)
   const weekSpent = sumThisWeekSpend(allExpenses)
+  const trends = buildSummaryTrends({
+    month,
+    today,
+    totalSpent: stats.totalSpent,
+    zeroSpendDays,
+    weekSpent,
+    prevMonthExpenses: prevMonthExpenses ?? [],
+    allExpenses,
+  })
 
   const dismissBudgetSuggest = () => {
     localStorage.setItem(budgetSuggestDismissKey(month), '1')
@@ -122,43 +153,20 @@ export default function BudgetPage() {
     reload()
   }
 
-  const changeMonth = (delta: number) => {
-    const next = shiftBudgetMonth(month, delta, startMonth)
-    if (next) setMonth(next)
-  }
-
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="가계부"
         tab="budget"
         searchTo={`/budget/search?month=${month}`}
-        actions={
-          <button
-            onClick={() => openExpenseModal()}
-            className="rounded-xl bg-accent p-2.5 text-surface"
-          >
-            <Plus size={18} />
-          </button>
-        }
+        onAdd={() => openExpenseModal()}
       >
-        <div className="mt-1 flex items-center gap-2">
-          <button
-            onClick={() => changeMonth(-1)}
-            disabled={!canShiftBudgetMonth(month, -1, startMonth)}
-            className={`${canShiftBudgetMonth(month, -1, startMonth) ? 'text-text-muted hover:text-text-primary' : 'cursor-not-allowed text-text-muted/30'}`}
-          >
-            ◀
-          </button>
-          <span className="text-sm text-text-secondary">{formatMonth(month)}</span>
-          <button
-            onClick={() => changeMonth(1)}
-            disabled={!canShiftBudgetMonth(month, 1, startMonth)}
-            className={`${canShiftBudgetMonth(month, 1, startMonth) ? 'text-text-muted hover:text-text-primary' : 'cursor-not-allowed text-text-muted/30'}`}
-          >
-            ▶
-          </button>
-        </div>
+        <MonthNav
+          month={month}
+          onChange={setMonth}
+          minMonth={minMonth}
+          maxMonth={maxBudgetMonth()}
+        />
       </PageHeader>
 
       {showBudgetSuggest && (
@@ -180,6 +188,9 @@ export default function BudgetPage() {
           showVariableSpendEmpty={stats.showVariableSpendEmpty}
           zeroSpendDays={zeroSpendDays}
           weekSpent={weekSpent}
+          spendTrend={trends.spendTrend}
+          zeroSpendTrend={trends.zeroSpendTrend}
+          weekTrend={trends.weekTrend}
           onOpenSummary={setSummaryView}
         />
       )}

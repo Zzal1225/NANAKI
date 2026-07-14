@@ -102,6 +102,7 @@ export default function BudgetSearchPage() {
         title="가계부 검색"
         tab="budget"
         hideSearch
+        hideAdd
         backTo="/budget"
       />
 

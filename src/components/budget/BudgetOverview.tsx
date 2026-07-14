@@ -44,11 +44,11 @@ export function BudgetBar({ budget, spent, compact = false }: BudgetBarProps) {
         <div className="relative flex h-full items-center justify-center px-2 text-xs font-semibold tabular-nums text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_0_6px_rgba(0,0,0,0.5)]">
           {over ? (
             <span>
-              {formatCurrency(spent)}/{formatCurrency(budget)} (-{formatCurrency(overflow)})
+              {formatCurrency(spent)} 사용/{formatCurrency(overflow)} 초과
             </span>
           ) : (
             <span>
-              {formatCurrency(spent)}/{formatCurrency(remaining)}
+              {formatCurrency(spent)} 사용/{formatCurrency(remaining)} 남음
             </span>
           )}
         </div>
@@ -61,14 +61,14 @@ export function BudgetBar({ budget, spent, compact = false }: BudgetBarProps) {
 
 export const CATEGORY_CHART_COLORS: Record<string, string> = {
   '주거/통신': '#60a5fa',
-  '식비': '#4ade80',
+  식비: '#4ade80',
   '교통/차량': '#22d3ee',
   '생활/쇼핑': '#facc15',
   '문화/여가': '#f472b6',
   '의료/교육': '#a78bfa',
-  '금융': '#fb923c',
-  '기타': '#94a3b8',
-  '미분류': '#64748b',
+  금융: '#fb923c',
+  기타: '#94a3b8',
+  미분류: '#64748b',
 }
 
 const REMAINING_COLOR = '#3d3555'
@@ -111,42 +111,104 @@ function polar(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
-function donutSegmentPath(
-  cx: number,
-  cy: number,
-  outerR: number,
-  innerR: number,
-  start: number,
-  end: number,
-) {
+/** 채워진 파이 조각 (내부 구멍 없음) */
+function pieSegmentPath(cx: number, cy: number, r: number, start: number, end: number) {
   const sweep = end - start
   if (sweep <= 0) return ''
-  if (sweep >= 359.99) end = start + 359.99
+  if (sweep >= 359.99) {
+    return [
+      `M ${cx} ${cy - r}`,
+      `A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r}`,
+      'Z',
+    ].join(' ')
+  }
 
-  const oStart = polar(cx, cy, outerR, end)
-  const oEnd = polar(cx, cy, outerR, start)
-  const iStart = polar(cx, cy, innerR, end)
-  const iEnd = polar(cx, cy, innerR, start)
+  const oStart = polar(cx, cy, r, end)
+  const oEnd = polar(cx, cy, r, start)
   const large = end - start > 180 ? 1 : 0
 
   return [
-    `M ${oStart.x} ${oStart.y}`,
-    `A ${outerR} ${outerR} 0 ${large} 0 ${oEnd.x} ${oEnd.y}`,
-    `L ${iEnd.x} ${iEnd.y}`,
-    `A ${innerR} ${innerR} 0 ${large} 1 ${iStart.x} ${iStart.y}`,
+    `M ${cx} ${cy}`,
+    `L ${oStart.x} ${oStart.y}`,
+    `A ${r} ${r} 0 ${large} 0 ${oEnd.x} ${oEnd.y}`,
     'Z',
   ].join(' ')
 }
 
-function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' }: DonutChartProps) {
-  const pad = 4
+function shortCategoryLabel(name: string) {
+  if (name === '남은 예산') return ''
+  // 슬래시 앞만 짧게
+  const head = name.split('/')[0]
+  return head.length > 4 ? `${head.slice(0, 4)}` : head
+}
+
+type Segment = {
+  start: number
+  end: number
+  color: string
+  label: string
+  amount: number
+  percent: number
+  showLabel: boolean
+}
+
+/** 조각이 좁아 내부 라벨이 안 들어갈 때: 바깥 지시선 + 짧은 이름 */
+function SliceCallout({
+  cx,
+  cy,
+  r,
+  mid,
+  label,
+  color,
+}: {
+  cx: number
+  cy: number
+  r: number
+  mid: number
+  label: string
+  color: string
+}) {
+  const short = shortCategoryLabel(label)
+  if (!short) return null
+
+  const inner = polar(cx, cy, r * 0.92, mid)
+  const outer = polar(cx, cy, r * 1.12, mid)
+  // 좌/우 절반에 따라 텍스트 정렬
+  const onRight = ((mid % 360) + 360) % 360 < 180
+  const textX = outer.x + (onRight ? 4 : -4)
+
+  return (
+    <g className="pointer-events-none">
+      <line
+        x1={inner.x}
+        y1={inner.y}
+        x2={outer.x}
+        y2={outer.y}
+        stroke={color}
+        strokeWidth={1.25}
+        opacity={0.85}
+      />
+      <circle cx={outer.x} cy={outer.y} r={1.75} fill={color} />
+      <text
+        x={textX}
+        y={outer.y}
+        textAnchor={onRight ? 'start' : 'end'}
+        dominantBaseline="middle"
+        className="fill-text-secondary text-[9px] font-semibold"
+      >
+        {short}
+      </text>
+    </g>
+  )
+}
+
+function DonutChart({ budget, spent, slices, size = 168, colorMode = 'category' }: DonutChartProps) {
+  const pad = 22
   const cx = size / 2
   const cy = size / 2
-  const outerR = size / 2 - 4
-  const innerR = size / 2 - 18
+  const r = size / 2 - 4
+  const labelR = r * 0.55
   const viewBox = `${-pad} ${-pad} ${size + pad * 2} ${size + pad * 2}`
-  const over = budget > 0 && spent > budget
-  const usePct = budget > 0 ? Math.round((spent / budget) * 100) : 0
   const [tooltip, setTooltip] = useState<{
     label: string
     amount: number
@@ -163,24 +225,20 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
     overflow: 'visible' as const,
   }
 
-  type Segment = {
-    start: number
-    end: number
-    color: string
-    label: string
-    amount: number
-    percent: number
-  }
   const segments: Segment[] = []
   let cursor = 0
 
-  const activeSlices = slices.filter((s) => s.spent > 0)
+  // 소비 금액 큰 순 (내림차순). 남은 예산은 맨 뒤에 별도 추가.
+  const activeSlices = [...slices]
+    .filter((s) => s.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+  const over = budget > 0 && spent > budget
 
   if (budget <= 0) {
     return (
       <div className="flex shrink-0 items-center justify-center overflow-visible">
         <svg {...svgProps}>
-          <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={REMAINING_COLOR} strokeWidth={outerR - innerR} />
+          <circle cx={cx} cy={cy} r={r} fill={REMAINING_COLOR} />
         </svg>
       </div>
     )
@@ -190,8 +248,14 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
     return (
       <div className="flex shrink-0 items-center justify-center overflow-visible">
         <svg {...svgProps}>
-          <circle cx={cx} cy={cy} r={(outerR + innerR) / 2} fill="none" stroke={REMAINING_COLOR} strokeWidth={outerR - innerR} />
-          <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" className="fill-text-muted text-[11px] font-semibold">
+          <circle cx={cx} cy={cy} r={r} fill={REMAINING_COLOR} />
+          <text
+            x={cx}
+            y={cy}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-text-muted text-[11px] font-semibold"
+          >
             0%
           </text>
         </svg>
@@ -211,6 +275,7 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
         label: slice.name,
         amount: slice.spent,
         percent: totalSpent > 0 ? Math.round((slice.spent / totalSpent) * 100) : 0,
+        showLabel: sweep >= 28,
       })
       cursor += sweep
     })
@@ -225,21 +290,32 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
         label: slice.name,
         amount: slice.spent,
         percent: Math.round((slice.spent / budget) * 100),
+        showLabel: sweep >= 28,
       })
       cursor += sweep
     })
     const remaining = budget - spent
     if (remaining > 0) {
+      const sweep = (remaining / budget) * 360
       segments.push({
         start: cursor,
-        end: cursor + (remaining / budget) * 360,
+        end: cursor + sweep,
         color: REMAINING_COLOR,
         label: '남은 예산',
         amount: remaining,
         percent: Math.round((remaining / budget) * 100),
+        showLabel: false,
       })
     }
   }
+
+  // 내부 라벨 불가 조각 → 지시선 라벨 (남은 예산·극소 조각 제외)
+  const CALL_OUT_MIN = 8
+  const calloutKeys = new Set(
+    segments
+      .filter((s) => s.label !== '남은 예산' && !s.showLabel && s.end - s.start >= CALL_OUT_MIN)
+      .map((s) => s.label),
+  )
 
   const showTooltip = (
     seg: Segment,
@@ -260,34 +336,61 @@ function DonutChart({ budget, spent, slices, size = 112, colorMode = 'category' 
   return (
     <div className="relative flex shrink-0 items-center justify-center overflow-visible">
       <svg {...svgProps}>
-        {segments.map((seg, i) => (
-          <path
-            key={i}
-            d={donutSegmentPath(cx, cy, outerR, innerR, seg.start, seg.end)}
-            fill={seg.color}
-            className="cursor-pointer transition-opacity hover:opacity-80"
-            onMouseEnter={(e) => {
-              const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect()
-              const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
-              showTooltip(seg, e.clientX, e.clientY, parentRect, rect)
-            }}
-            onMouseMove={(e) => {
-              const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
-              if (!parentRect) return
-              showTooltip(seg, e.clientX, e.clientY, parentRect, parentRect)
-            }}
-            onMouseLeave={() => setTooltip(null)}
-          />
-        ))}
-        <text
-          x={cx}
-          y={cy}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className={`pointer-events-none text-[13px] font-bold tabular-nums ${over ? 'fill-danger' : 'fill-text-primary'}`}
-        >
-          {usePct}%
-        </text>
+        {segments.map((seg, i) => {
+          const mid = (seg.start + seg.end) / 2
+          const labelPos = polar(cx, cy, labelR, mid)
+          const short = shortCategoryLabel(seg.label)
+          const useCallout = calloutKeys.has(seg.label)
+          return (
+            <g key={i}>
+              <path
+                d={pieSegmentPath(cx, cy, r, seg.start, seg.end)}
+                fill={seg.color}
+                className="cursor-pointer transition-opacity hover:opacity-85"
+                onMouseEnter={(e) => {
+                  const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect()
+                  const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
+                  showTooltip(seg, e.clientX, e.clientY, parentRect, rect)
+                }}
+                onMouseMove={(e) => {
+                  const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
+                  if (!parentRect) return
+                  showTooltip(seg, e.clientX, e.clientY, parentRect, parentRect)
+                }}
+                onMouseLeave={() => setTooltip(null)}
+                onTouchStart={(e) => {
+                  const t = e.touches[0]
+                  if (!t) return
+                  const parentRect = e.currentTarget.closest('.relative')?.getBoundingClientRect()
+                  const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect()
+                  showTooltip(seg, t.clientX, t.clientY, parentRect, rect)
+                }}
+              />
+              {seg.showLabel && short && (
+                <text
+                  x={labelPos.x}
+                  y={labelPos.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="pointer-events-none fill-surface text-[9px] font-semibold"
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.45)' }}
+                >
+                  {short}
+                </text>
+              )}
+              {useCallout && (
+                <SliceCallout
+                  cx={cx}
+                  cy={cy}
+                  r={r}
+                  mid={mid}
+                  label={seg.label}
+                  color={seg.color}
+                />
+              )}
+            </g>
+          )
+        })}
       </svg>
       {tooltip && (
         <div
@@ -309,7 +412,7 @@ interface BudgetOverviewProps {
   budget: number
   spent: number
   categorySpends: CategorySpendSlice[]
-  legendCategories: string[]
+  legendCategories?: string[]
   hasUnsetBudgetCategories?: boolean
   onOpenBudgetSettings?: () => void
   colorMode?: 'category' | 'palette'
@@ -319,7 +422,6 @@ export default function BudgetOverview({
   budget,
   spent,
   categorySpends,
-  legendCategories,
   hasUnsetBudgetCategories = false,
   onOpenBudgetSettings,
   colorMode = 'category',
@@ -329,38 +431,39 @@ export default function BudgetOverview({
 
   return (
     <div className="flex flex-col gap-3 overflow-visible">
-      <div
-        className={`grid w-full items-center gap-3 overflow-visible ${
-          legendCategories.length > 0 ? 'grid-cols-2' : 'grid-cols-1'
-        }`}
-      >
-        <div className="flex min-w-0 flex-col items-center justify-center gap-2">
-          <DonutChart budget={budget} spent={spent} slices={categorySpends} colorMode={colorMode} />
-          <p className="whitespace-nowrap text-center text-sm font-bold tabular-nums leading-tight">
-            <span className={over ? 'text-danger' : 'text-text-primary'}>{formatCurrency(spent)}</span>
-            <span
-              className={
-                budgetUnset ? 'font-medium text-text-muted' : over ? 'text-text-primary' : 'text-text-secondary'
-              }
-            >
-              /{formatBudgetLabel(budget)}
-            </span>
-          </p>
+      <div className="grid w-full grid-cols-[minmax(0,1.55fr)_minmax(0,0.75fr)] items-center gap-2 overflow-visible">
+        <div className="flex min-w-0 items-center justify-center overflow-visible">
+          <DonutChart
+            budget={budget}
+            spent={spent}
+            slices={categorySpends}
+            colorMode={colorMode}
+            size={200}
+          />
         </div>
 
-        {legendCategories.length > 0 && (
-          <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 content-center">
-            {legendCategories.map((name, index) => (
-              <span key={name} className="inline-flex min-w-0 items-center gap-1.5 text-xs text-text-secondary">
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: getSliceColor(name, index, colorMode) }}
-                />
-                <span className="truncate">{name}</span>
-              </span>
-            ))}
+        <div className="flex min-w-0 flex-col justify-center gap-2.5">
+          <div>
+            <p className="text-[10px] text-text-muted">총 지출</p>
+            <p
+              className={`text-sm font-bold tabular-nums leading-tight ${
+                over ? 'text-danger' : 'text-text-primary'
+              }`}
+            >
+              {formatCurrency(spent)}
+            </p>
           </div>
-        )}
+          <div>
+            <p className="text-[10px] text-text-muted">총 예산</p>
+            <p
+              className={`text-sm font-semibold tabular-nums leading-tight ${
+                budgetUnset ? 'text-text-muted' : 'text-text-secondary'
+              }`}
+            >
+              {formatBudgetLabel(budget)}
+            </p>
+          </div>
+        </div>
       </div>
 
       {hasUnsetBudgetCategories && (
@@ -369,7 +472,11 @@ export default function BudgetOverview({
             카테고리별 예산을 설정하면 더 정확한 소비 통계를 확인할 수 있어요.
           </p>
           {onOpenBudgetSettings && (
-            <button type="button" className={`${btnSecondary} w-auto px-4 py-2 text-xs`} onClick={onOpenBudgetSettings}>
+            <button
+              type="button"
+              className={`${btnSecondary} w-auto px-4 py-2 text-xs`}
+              onClick={onOpenBudgetSettings}
+            >
               예산 설정하러 가기
             </button>
           )}

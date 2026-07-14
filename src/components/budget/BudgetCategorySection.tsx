@@ -37,7 +37,8 @@ export default function BudgetCategorySection({
 }: BudgetCategorySectionProps) {
   return (
     <section>
-      <div className="mb-3 flex items-center justify-end">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-text-secondary">카테고리별 예산</h2>
         <button
           onClick={onOpenCategorySettings}
           className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
