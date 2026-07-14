@@ -8,7 +8,7 @@ export default function SearchResultsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="검색 결과" tab="home" hideSearch backTo="/" />
+      <PageHeader title="검색 결과" tab="home" hideSearch hideAdd backTo="/" />
       <GlobalSearch
         initialQuery={initialQuery}
         syncQueryToUrl

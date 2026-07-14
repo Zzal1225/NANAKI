@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
 import { Card } from '../common/Card'
 import { useAsync } from '../../hooks/useAsync'
@@ -13,16 +13,26 @@ import {
   isDoseCompleted,
 } from '../../supplements/adherence'
 import { formatScheduleLabel, scheduleKey } from '../../supplements/nutrients'
-import { currentMonth, formatMonth, todayISO } from '../../utils/dates'
+import { clampDateToMonth, currentMonth, formatMonth, todayISO } from '../../utils/dates'
 import type { SupplementProduct } from '../../types'
 
 type SupplementCalendarProps = {
   products?: SupplementProduct[]
   onChanged?: () => void
+  /** 페이지 헤더와 동기화할 월 (있으면 내부 월 네비 숨김) */
+  month?: string
+  onMonthChange?: (month: string) => void
 }
 
-export default function SupplementCalendar({ products: productsProp, onChanged }: SupplementCalendarProps) {
-  const [month, setMonth] = useState(currentMonth())
+export default function SupplementCalendar({
+  products: productsProp,
+  onChanged,
+  month: monthProp,
+  onMonthChange,
+}: SupplementCalendarProps) {
+  const [internalMonth, setInternalMonth] = useState(currentMonth())
+  const month = monthProp ?? internalMonth
+  const setMonth = onMonthChange ?? setInternalMonth
   const [selectedDate, setSelectedDate] = useState(todayISO())
   const { data: fetched, reload: reloadProducts } = useAsync(() => getAllSupplementProducts(), [])
   const products = productsProp ?? fetched ?? []
@@ -40,6 +50,10 @@ export default function SupplementCalendar({ products: productsProp, onChanged }
     () => listExpectedDosesForDate(products, selectedDate),
     [products, selectedDate],
   )
+
+  useEffect(() => {
+    setSelectedDate((d) => (d.startsWith(month) ? d : clampDateToMonth(d, month)))
+  }, [month])
 
   const changeMonth = (delta: number) => {
     const [y, m] = month.split('-').map(Number)
@@ -63,19 +77,23 @@ export default function SupplementCalendar({ products: productsProp, onChanged }
     reload()
   }
 
+  const controlled = monthProp != null
+
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-text-secondary">복용 캘린더</h2>
-        <div className="flex items-center gap-2 text-sm text-text-secondary">
-          <button type="button" onClick={() => changeMonth(-1)} className="text-text-muted hover:text-text-primary">
-            ◀
-          </button>
-          <span>{formatMonth(month)}</span>
-          <button type="button" onClick={() => changeMonth(1)} className="text-text-muted hover:text-text-primary">
-            ▶
-          </button>
-        </div>
+        {!controlled && (
+          <div className="flex items-center gap-2 text-sm text-text-secondary">
+            <button type="button" onClick={() => changeMonth(-1)} className="text-text-muted hover:text-text-primary">
+              ◀
+            </button>
+            <span>{formatMonth(month)}</span>
+            <button type="button" onClick={() => changeMonth(1)} className="text-text-muted hover:text-text-primary">
+              ▶
+            </button>
+          </div>
+        )}
       </div>
 
       <Card className="flex flex-col gap-3">

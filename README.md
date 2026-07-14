@@ -17,8 +17,11 @@
 Home
  ├── Budget   (가계부)
  ├── Health   (건강 · 체형 / 영양제)
+ ├── Life     (생활 · 반복 / 냉장고)
  ├── Records  (기록 · 검색)
  └── Habits   (습관)
+
+  ※ 홈은 하단 탭이 아니라 상단 Nanaki 로고 옆 🏠 아이콘
 
         ↓
 
@@ -62,9 +65,10 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 | ------ | ------------------------------- | --- |
 | 가계부 | 카테고리별 예산, 고정/변동 지출 | ✅  |
 | 건강   | 체형(체중·둘레·눈바디) · 영양제 | ✅  |
+| 생활   | 반복 · 냉장고 · 구매 주기 · 알림  | ✅  |
 | 기록   | 개인 검색 · 기록 보관           | 🔜  |
 | 습관   | 일일 체크                       | 🔜  |
-| 홈     | 캘린더, 30일 비교, 통합 검색    | 🔜  |
+| 홈     | 캘린더, 30일 비교, 통합 검색 (상단 🏠) | 🔜  |
 
 로드맵: [docs/ROADMAP.md](docs/ROADMAP.md)
 
@@ -74,8 +78,9 @@ http://localhost:5173 — Hot Reload, IndexedDB 유지.
 
 ```
 src/
-├── pages/           탭 단위 페이지 (Home, Budget, Health, Records, Habits)
+├── pages/           탭 단위 페이지 (Home, Budget, Health, Life, Records, Habits)
 ├── components/      공통 UI 및 도메인 컴포넌트
+├── life/            반복 예정 · 냉장고 상태 로직
 ├── budget/          예산 계산, 반복지출, 집계 로직
 ├── db/              IndexedDB, Repository, Migration
 ├── search/          검색 엔진
@@ -164,6 +169,7 @@ React 19 · TypeScript · Vite · Tailwind 4 · IndexedDB (idb) · vite-plugin-p
 | 문서                                           | 내용                                |
 | ---------------------------------------------- | ----------------------------------- |
 | [docs/ROADMAP.md](docs/ROADMAP.md)             | 개발 순서 · Phase 체크리스트        |
+| [docs/LIFE_TAB.md](docs/LIFE_TAB.md)           | 생활 탭 스펙 · MVP                  |
 | [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)     | IndexedDB · UserOwned · 가계부 구조 |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | 디자인 토큰 · UI 패턴               |
 | [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)     | README 스크린샷 체크리스트          |

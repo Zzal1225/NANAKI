@@ -9,6 +9,8 @@ interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   options: SegmentedOption<T>[]
   className?: string
+  /** 헤더용 컴팩트 */
+  compact?: boolean
 }
 
 export default function SegmentedControl<T extends string>({
@@ -16,10 +18,13 @@ export default function SegmentedControl<T extends string>({
   onChange,
   options,
   className = '',
+  compact = false,
 }: SegmentedControlProps<T>) {
   return (
     <div
-      className={`flex rounded-full border border-border bg-surface-raised p-1 ${className}`}
+      className={`flex rounded-full border border-border bg-surface-raised ${
+        compact ? 'p-0.5' : 'p-1'
+      } ${className}`}
       role="tablist"
     >
       {options.map((option) => {
@@ -31,14 +36,20 @@ export default function SegmentedControl<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.value)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
+            className={`flex items-center justify-center gap-1 rounded-full font-medium transition-all ${
+              compact
+                ? 'px-2.5 py-1.5 text-xs'
+                : 'flex-1 gap-1.5 px-3 py-2 text-sm'
+            } ${
               active
                 ? 'bg-accent text-surface shadow-sm'
                 : 'text-text-muted hover:text-text-secondary'
             }`}
           >
-            {option.icon && <span className="text-base leading-none">{option.icon}</span>}
-            <span>{option.label}</span>
+            {option.icon && (
+              <span className={`leading-none ${compact ? 'text-sm' : 'text-base'}`}>{option.icon}</span>
+            )}
+            <span className={compact ? 'whitespace-nowrap' : undefined}>{option.label}</span>
           </button>
         )
       })}

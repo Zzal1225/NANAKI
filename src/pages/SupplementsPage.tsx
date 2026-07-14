@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ChevronLeft, Plus } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import { useAsync } from '../hooks/useAsync'
 import { getAllSupplementProducts, saveSupplementProduct } from '../db'
@@ -44,25 +42,9 @@ export default function SupplementsPage() {
       <PageHeader
         title="영양제"
         tab="health"
-        actions={
-          <button
-            type="button"
-            onClick={() => setShowAdd(true)}
-            className="rounded-xl bg-accent p-2.5 text-surface"
-            aria-label="영양제 추가"
-          >
-            <Plus size={18} />
-          </button>
-        }
-      >
-        <Link
-          to="/health"
-          className="mt-1 inline-flex items-center gap-0.5 text-sm text-text-muted hover:text-text-primary"
-        >
-          <ChevronLeft size={14} />
-          건강
-        </Link>
-      </PageHeader>
+        backTo="/health"
+        onAdd={() => setShowAdd(true)}
+      />
 
       <ActiveSupplementsList products={active} onEnd={handleEnd} />
       <SupplementCalendar products={list} onChanged={reload} />

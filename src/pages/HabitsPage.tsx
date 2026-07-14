@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { Card } from '../components/common/Card'
 import Modal, { FormField, inputClass, selectClass, btnPrimary } from '../components/common/Modal'
 import { useAsync } from '../hooks/useAsync'
@@ -11,13 +11,20 @@ import {
   getHabitLogsByDate,
   toggleHabitLog,
 } from '../db'
-import { formatDate, todayISO, HABIT_EMOJIS, HABIT_COLORS } from '../utils/dates'
+import { clampDateToMonth, formatDate, todayISO, HABIT_EMOJIS, HABIT_COLORS } from '../utils/dates'
+import { endOfMonth, parseISO, format } from 'date-fns'
 import type { Habit, HabitType, UserOwnedInput } from '../types'
 import PageHeader from '../components/layout/PageHeader'
+import MonthNav from '../components/layout/MonthNav'
 import { useSections } from '../context/SectionContext'
+import { useMonthScope } from '../hooks/useMonthScope'
+import { getHabitsDataStartMonth } from '../utils/dataStartMonth'
 
 export default function HabitsPage() {
   const { isSectionEnabled } = useSections()
+  const { month, setMonth, minMonth } = useMonthScope({
+    getStartMonth: getHabitsDataStartMonth,
+  })
   const [selectedDate, setSelectedDate] = useState(todayISO())
   const [showModal, setShowModal] = useState(false)
 
@@ -26,6 +33,10 @@ export default function HabitsPage() {
     () => getHabitLogsByDate(selectedDate),
     [selectedDate],
   )
+
+  useEffect(() => {
+    setSelectedDate((d) => clampDateToMonth(d, month))
+  }, [month])
 
   const reload = () => {
     reloadHabits()
@@ -48,15 +59,10 @@ export default function HabitsPage() {
       <PageHeader
         title="습관"
         tab="habits"
-        actions={
-          <button
-            onClick={() => setShowModal(true)}
-            className="rounded-xl bg-accent p-2.5 text-surface"
-          >
-            <Plus size={18} />
-          </button>
-        }
-      />
+        onAdd={() => setShowModal(true)}
+      >
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+      </PageHeader>
 
       {isSectionEnabled('habits-checklist') && (
       <>
@@ -66,6 +72,8 @@ export default function HabitsPage() {
           type="date"
           className="w-full rounded-xl border border-border bg-surface-raised px-3 py-2.5 text-sm outline-none focus:border-accent"
           value={selectedDate}
+          min={`${month}-01`}
+          max={format(endOfMonth(parseISO(`${month}-01`)), 'yyyy-MM-dd')}
           onChange={(e) => setSelectedDate(e.target.value)}
         />
       </FormField>

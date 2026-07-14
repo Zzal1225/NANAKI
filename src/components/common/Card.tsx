@@ -30,6 +30,7 @@ export function StatCard({
   sub,
   emptyText,
   color = 'text-accent',
+  valueClassName = 'text-xl font-bold',
   onClick,
 }: {
   label: string
@@ -37,6 +38,8 @@ export function StatCard({
   sub?: string
   emptyText?: string
   color?: string
+  /** 금액 등 value 글자 크기 · 기본 text-xl */
+  valueClassName?: string
   onClick?: () => void
 }) {
   return (
@@ -48,7 +51,7 @@ export function StatCard({
       {emptyText ? (
         <span className="text-sm leading-snug text-text-muted">{emptyText}</span>
       ) : (
-        <span className={`text-xl font-bold ${color}`}>{value}</span>
+        <span className={`tabular-nums ${valueClassName} ${color}`}>{value}</span>
       )}
       {sub && <span className="text-xs text-text-secondary">{sub}</span>}
     </Card>

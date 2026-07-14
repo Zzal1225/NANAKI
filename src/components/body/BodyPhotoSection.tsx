@@ -13,12 +13,14 @@ import {
 import { compressBodyPhoto } from '../../utils/imageCompress'
 import { formatDate, todayISO } from '../../utils/dates'
 
-export default function BodyPhotoSection() {
+export default function BodyPhotoSection({ month }: { month?: string }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const { data: photos, reload } = useAsync(() => getAllBodyPhotos(), [])
+
+  const monthPhotos = month ? (photos ?? []).filter((p) => p.date.startsWith(month)) : (photos ?? [])
 
   useEffect(() => {
     if (!previewId) {
@@ -78,13 +80,15 @@ export default function BodyPhotoSection() {
         />
       </div>
 
-      {!photos?.length ? (
+      {!monthPhotos.length ? (
         <Card>
-          <p className="text-sm text-text-muted">눈바디 사진이 없습니다.</p>
+          <p className="text-sm text-text-muted">
+            {month ? '이 달의 눈바디가 없습니다.' : '눈바디 사진이 없습니다.'}
+          </p>
         </Card>
       ) : (
         <div className="grid grid-cols-3 gap-2">
-          {photos.map((photo) => (
+          {monthPhotos.map((photo) => (
             <BodyPhotoThumb
               key={photo.id}
               photoId={photo.id}

@@ -77,7 +77,8 @@
 - `px-4 pb-24` — 하단 탭바 여백
 - 고정 하단 `nav`: `bg-surface-raised/95 backdrop-blur-lg`
 - 활성 탭: `text-accent`, 비활성: `text-text-muted`
-- 탭: 홈 · 가계부 · 건강 · 기록 · 습관 (`src/config/sections.ts`)
+- 탭: 홈(상단 🏠) · 가계부 · 건강 · 생활 · 기록 · 습관 (`src/config/sections.ts`)
+- 상단: **Nanaki** 텍스트(추후 로고) + 홈 아이콘 · 하단 탭 5개
 
 ---
 

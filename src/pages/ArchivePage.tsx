@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Star } from 'lucide-react'
+import { Trash2, Star } from 'lucide-react'
 import { Card } from '../components/common/Card'
 import SearchBar from '../components/common/SearchBar'
 import Modal, { FormField, inputClass, selectClass, btnPrimary } from '../components/common/Modal'
@@ -14,11 +14,17 @@ import {
 import { formatDate, todayISO, ARCHIVE_TYPE_LABELS } from '../utils/dates'
 import type { ArchiveItem, ArchiveType, UserOwnedInput } from '../types'
 import PageHeader from '../components/layout/PageHeader'
+import MonthNav from '../components/layout/MonthNav'
 import GlobalSearch from '../components/search/GlobalSearch'
 import { useSections } from '../context/SectionContext'
+import { useMonthScope } from '../hooks/useMonthScope'
+import { getRecordsDataStartMonth } from '../utils/dataStartMonth'
 
 export default function ArchivePage() {
   const { isSectionEnabled } = useSections()
+  const { month, setMonth, minMonth } = useMonthScope({
+    getStartMonth: getRecordsDataStartMonth,
+  })
   const [query, setQuery] = useState('')
   const [filterType, setFilterType] = useState<ArchiveType | 'all'>('all')
   const [showModal, setShowModal] = useState(false)
@@ -32,13 +38,14 @@ export default function ArchivePage() {
       let result = useLocalSearch
         ? await searchArchiveItems(query)
         : allItems ?? []
+      result = result.filter((i: ArchiveItem) => i.date.startsWith(month))
       if (filterType !== 'all') {
         result = result.filter((i: ArchiveItem) => i.type === filterType)
       }
       setItems(result)
     }
     load()
-  }, [query, filterType, allItems, isSectionEnabled])
+  }, [query, filterType, allItems, isSectionEnabled, month])
 
   const types: (ArchiveType | 'all')[] = ['all', 'product', 'place', 'treatment', 'other']
 
@@ -47,15 +54,10 @@ export default function ArchivePage() {
       <PageHeader
         title="기록"
         tab="records"
-        actions={
-          <button
-            onClick={() => setShowModal(true)}
-            className="rounded-xl bg-accent p-2.5 text-surface"
-          >
-            <Plus size={18} />
-          </button>
-        }
-      />
+        onAdd={() => setShowModal(true)}
+      >
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+      </PageHeader>
 
       {isSectionEnabled('records-search') && (
         <GlobalSearch placeholder="아카이브 검색 — '그 소스 먹어봤는데...'" />

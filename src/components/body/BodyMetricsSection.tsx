@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2, Link2 } from 'lucide-react'
 import { Card, StatCard } from '../common/Card'
 import Modal, { FormField, inputClass, btnPrimary } from '../common/Modal'
@@ -15,19 +15,36 @@ import {
   isMeasurementDue,
 } from '../../body/measurementReminders'
 
-export default function BodyMetricsSection() {
+export default function BodyMetricsSection({
+  month,
+  openCreateTick = 0,
+}: {
+  month?: string
+  openCreateTick?: number
+}) {
   const [showModal, setShowModal] = useState(false)
   const [linkedDate, setLinkedDate] = useState<string | null>(null)
   const { data: records, reload } = useAsync(() => getAllBodyRecords(), [])
   const { data: settings } = useAsync(() => getAppSettings(), [])
+
+  useEffect(() => {
+    if (openCreateTick <= 0) return
+    setShowModal(true)
+  }, [openCreateTick])
 
   const { data: periodContext, loading: timelineLoading } = useAsync(
     () => (linkedDate ? getPeriodContext(linkedDate, 7) : Promise.resolve(null)),
     [linkedDate],
   )
 
-  const latest = records?.[0]
-  const prev = records?.[1]
+  const monthRecords = useMemo(() => {
+    if (!records) return []
+    if (!month) return records
+    return records.filter((r) => r.date.startsWith(month))
+  }, [records, month])
+
+  const latest = monthRecords[0]
+  const prev = monthRecords[1]
   const today = todayISO()
 
   const dueMetrics = useMemo(() => {
@@ -90,13 +107,15 @@ export default function BodyMetricsSection() {
         </div>
       )}
 
-      {!records?.length ? (
+      {!monthRecords.length ? (
         <Card>
-          <p className="text-sm text-text-muted">아직 기록이 없습니다.</p>
+          <p className="text-sm text-text-muted">
+            {month ? '이 달의 체형 기록이 없습니다.' : '아직 기록이 없습니다.'}
+          </p>
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {records.map((r) => (
+          {monthRecords.map((r) => (
             <Card key={r.id}>
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">

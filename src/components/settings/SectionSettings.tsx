@@ -10,9 +10,11 @@ import { exportJsonBackup, importJsonBackup } from '../../export/jsonBackup'
 
 interface SectionSettingsProps {
   tab?: TabId
+  /** 헤더 한 줄용 작은 버튼 */
+  compact?: boolean
 }
 
-export default function SectionSettings({ tab }: SectionSettingsProps) {
+export default function SectionSettings({ tab, compact = false }: SectionSettingsProps) {
   const [open, setOpen] = useState(false)
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState<'json' | 'csv' | null>(null)
@@ -30,11 +32,17 @@ export default function SectionSettings({ tab }: SectionSettingsProps) {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="rounded-xl border border-border p-2.5 text-text-secondary hover:border-accent/50"
+        className={
+          compact
+            ? 'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-accent/50 hover:text-text-primary'
+            : 'rounded-xl border border-border p-2.5 text-text-secondary hover:border-accent/50'
+        }
         title="섹션 설정"
+        aria-label="섹션 설정"
       >
-        <Blocks size={18} />
+        <Blocks size={compact ? 15 : 18} />
       </button>
 
       <Modal
