@@ -29,9 +29,9 @@ export const ALL_SECTIONS: SectionMeta[] = [
   { id: 'budget-summary', label: '예산 요약', tab: 'budget', group: '가계부', defaultEnabled: true },
   { id: 'budget-categories', label: '카테고리별 예산', tab: 'budget', group: '가계부', defaultEnabled: true },
 
-  { id: 'body-metrics', label: '체중 · 둘레', tab: 'health', group: '체형', defaultEnabled: true },
+  { id: 'body-weight', label: '체중', tab: 'health', group: '체형', defaultEnabled: true },
+  { id: 'body-circumference', label: '신체둘레', tab: 'health', group: '체형', defaultEnabled: true },
   { id: 'body-photo', label: '눈바디', tab: 'health', group: '체형', defaultEnabled: true },
-  { id: 'body-intervals', label: '측정 주기', tab: 'health', group: '체형', defaultEnabled: true },
   { id: 'supplements-summary', label: '영양제', tab: 'health', group: '영양제', defaultEnabled: true },
 
   { id: 'life-routines', label: '반복 관리', tab: 'life', group: '생활', defaultEnabled: true },

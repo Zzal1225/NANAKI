@@ -1,4 +1,16 @@
-import { addDays, format, parseISO } from 'date-fns'
+/**
+ * @deprecated 체형 섹션은 sectionConfig / sectionReminders 사용.
+ * 레거시 BodyMetricKey 호환용으로만 유지.
+ */
+export {
+  getNextDueDate,
+  isMeasurementDue,
+} from './sectionReminders'
+
+export {
+  BODY_SECTION_LABELS as BODY_METRIC_LABELS_SECTION,
+} from './sectionConfig'
+
 import type { BodyMetricKey, BodyRecord } from '../types'
 
 export const BODY_METRIC_LABELS: Record<BodyMetricKey, string> = {
@@ -34,15 +46,4 @@ export function findLastMetricDate(records: BodyRecord[], metric: BodyMetricKey)
     if (getMetricValue(r, metric) !== undefined) return r.date
   }
   return undefined
-}
-
-export function getNextDueDate(lastDate: string | undefined, intervalDays: number): string | null {
-  if (!lastDate) return null
-  return format(addDays(parseISO(lastDate), intervalDays), 'yyyy-MM-dd')
-}
-
-export function isMeasurementDue(lastDate: string | undefined, intervalDays: number, today: string): boolean {
-  const next = getNextDueDate(lastDate, intervalDays)
-  if (!next) return true
-  return next <= today
 }

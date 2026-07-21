@@ -1,5 +1,5 @@
 /** 눈바디용 — 최대 너비 제한 JPEG 압축 */
-export async function compressBodyPhoto(file: File, maxWidth = 1200, quality = 0.82): Promise<Blob> {
+export async function compressBodyPhoto(file: File, maxWidth = 1200, quality = 0.8): Promise<Blob> {
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, maxWidth / bitmap.width)
   const width = Math.round(bitmap.width * scale)

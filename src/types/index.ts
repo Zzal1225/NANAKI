@@ -77,6 +77,8 @@ export interface BodyMeasurements {
   arm?: number
   thigh?: number
   calf?: number
+  /** 사용자 추가 둘레 부위 id → cm */
+  [partId: string]: number | undefined
 }
 
 export interface BodyRecord extends UserOwned {
@@ -95,6 +97,17 @@ export interface BodyPhotoRecord extends UserOwned {
   blob: Blob
 }
 
+/** 체형 3대 섹션 */
+export type BodySectionKey = 'weight' | 'circumference' | 'photo'
+
+/** 신체 둘레 부위 (기본 + 사용자 추가) */
+export interface CircumferencePart {
+  id: string
+  name: string
+  builtin?: boolean
+}
+
+/** @deprecated 레거시 메트릭 키 — bodySectionIntervals로 이전 */
 export type BodyMetricKey =
   | 'weight'
   | 'bodyFat'
@@ -342,8 +355,12 @@ export type TabId = 'home' | 'budget' | 'health' | 'life' | 'records' | 'habits'
 export type SectionId =
   | 'budget-summary'
   | 'budget-categories'
-  | 'body-metrics'
+  | 'body-weight'
+  | 'body-circumference'
   | 'body-photo'
+  /** @deprecated → body-weight + body-circumference */
+  | 'body-metrics'
+  /** @deprecated 섹션별 주기 인라인으로 이전 */
   | 'body-intervals'
   | 'supplements-summary'
   | 'life-routines'
@@ -365,7 +382,11 @@ export interface AppSettings extends UserOwned {
   schemaVersion?: number
   /** 모든 달에 공유되는 가계부 카테고리 */
   budgetCategories?: BudgetCategory[]
-  /** 체형 항목별 측정 주기(일) */
+  /** 체중 / 신체둘레 / 눈바디 측정 주기(일) */
+  bodySectionIntervals?: Partial<Record<BodySectionKey, number>>
+  /** 신체 둘레 부위 목록 */
+  circumferenceParts?: CircumferencePart[]
+  /** @deprecated bodySectionIntervals 로 이전 */
   bodyMeasurementIntervals?: Partial<Record<BodyMetricKey, number>>
   /** @deprecated budgetCategories로 마이그레이션 */
   fixedCategories?: BudgetCategory[]

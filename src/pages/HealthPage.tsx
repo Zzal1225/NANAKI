@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import BodyMetricsSection from '../components/body/BodyMetricsSection'
+import BodyWeightSection from '../components/body/BodyWeightSection'
+import BodyCircumferenceSection from '../components/body/BodyCircumferenceSection'
 import BodyPhotoSection from '../components/body/BodyPhotoSection'
-import MeasurementIntervalSettings from '../components/body/MeasurementIntervalSettings'
 import SupplementsSummarySection from '../components/supplements/SupplementsSummarySection'
 import SupplementCalendar from '../components/supplements/SupplementCalendar'
 import PageHeader from '../components/layout/PageHeader'
@@ -14,14 +14,22 @@ import { getHealthDataStartMonth } from '../utils/dataStartMonth'
 export default function HealthPage() {
   const { isSectionEnabled } = useSections()
   const navigate = useNavigate()
-  const { month, setMonth, minMonth } = useMonthScope({
+  const { month, setMonth, minMonth, maxMonth } = useMonthScope({
     getStartMonth: getHealthDataStartMonth,
   })
   const [openCreateTick, setOpenCreateTick] = useState(0)
 
+  const showBody =
+    isSectionEnabled('body-weight') ||
+    isSectionEnabled('body-circumference') ||
+    isSectionEnabled('body-photo')
+
   const handleAdd = () => {
-    if (isSectionEnabled('body-metrics')) {
+    if (isSectionEnabled('body-weight')) {
       setOpenCreateTick((t) => t + 1)
+      return
+    }
+    if (isSectionEnabled('body-circumference') || isSectionEnabled('body-photo')) {
       return
     }
     navigate('/health/supplements')
@@ -30,19 +38,19 @@ export default function HealthPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="건강" tab="health" onAdd={handleAdd}>
-        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} maxMonth={maxMonth} />
       </PageHeader>
 
-      {(isSectionEnabled('body-metrics') ||
-        isSectionEnabled('body-photo') ||
-        isSectionEnabled('body-intervals')) && (
-        <div className="flex flex-col gap-5">
+      {showBody && (
+        <div className="flex flex-col gap-6">
           <h2 className="text-sm font-semibold text-text-secondary">체형</h2>
-          {isSectionEnabled('body-metrics') && (
-            <BodyMetricsSection month={month} openCreateTick={openCreateTick} />
+          {isSectionEnabled('body-weight') && (
+            <BodyWeightSection month={month} openCreateTick={openCreateTick} />
+          )}
+          {isSectionEnabled('body-circumference') && (
+            <BodyCircumferenceSection month={month} />
           )}
           {isSectionEnabled('body-photo') && <BodyPhotoSection month={month} />}
-          {isSectionEnabled('body-intervals') && <MeasurementIntervalSettings />}
         </div>
       )}
 
