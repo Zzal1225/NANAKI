@@ -16,9 +16,14 @@ export function shiftMonth(month: string, delta: number) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** 가계부 월 이동 상한 — 이번 달 포함 +3개월 */
-export function maxBudgetMonth() {
+/** 탭 공통 월 이동 상한 — 이번 달 포함 +3개월 */
+export function maxNavigableMonth() {
   return format(addMonths(new Date(), 3), 'yyyy-MM')
+}
+
+/** @deprecated maxNavigableMonth 사용 — 가계부 호환 별칭 */
+export function maxBudgetMonth() {
+  return maxNavigableMonth()
 }
 
 /** 해당 월의 오늘(현재 월) 또는 1일 */

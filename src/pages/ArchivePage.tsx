@@ -22,7 +22,7 @@ import { getRecordsDataStartMonth } from '../utils/dataStartMonth'
 
 export default function ArchivePage() {
   const { isSectionEnabled } = useSections()
-  const { month, setMonth, minMonth } = useMonthScope({
+  const { month, setMonth, minMonth, maxMonth } = useMonthScope({
     getStartMonth: getRecordsDataStartMonth,
   })
   const [query, setQuery] = useState('')
@@ -56,7 +56,7 @@ export default function ArchivePage() {
         tab="records"
         onAdd={() => setShowModal(true)}
       >
-        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} maxMonth={maxMonth} />
       </PageHeader>
 
       {isSectionEnabled('records-search') && (

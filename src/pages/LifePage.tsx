@@ -17,7 +17,7 @@ import { getLifeDataStartMonth } from '../utils/dataStartMonth'
 
 export default function LifePage() {
   const { isSectionEnabled } = useSections()
-  const { month, setMonth, minMonth } = useMonthScope({
+  const { month, setMonth, minMonth, maxMonth } = useMonthScope({
     getStartMonth: getLifeDataStartMonth,
   })
   const [openCreateTick, setOpenCreateTick] = useState(0)
@@ -35,7 +35,7 @@ export default function LifePage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="생활" tab="life" onAdd={() => setOpenCreateTick((t) => t + 1)}>
-        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} maxMonth={maxMonth} />
       </PageHeader>
 
       {isSectionEnabled('life-routines') && (

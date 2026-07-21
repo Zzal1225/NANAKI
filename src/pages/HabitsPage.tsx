@@ -22,7 +22,7 @@ import { getHabitsDataStartMonth } from '../utils/dataStartMonth'
 
 export default function HabitsPage() {
   const { isSectionEnabled } = useSections()
-  const { month, setMonth, minMonth } = useMonthScope({
+  const { month, setMonth, minMonth, maxMonth } = useMonthScope({
     getStartMonth: getHabitsDataStartMonth,
   })
   const [selectedDate, setSelectedDate] = useState(todayISO())
@@ -61,7 +61,7 @@ export default function HabitsPage() {
         tab="habits"
         onAdd={() => setShowModal(true)}
       >
-        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} />
+        <MonthNav month={month} onChange={setMonth} minMonth={minMonth} maxMonth={maxMonth} />
       </PageHeader>
 
       {isSectionEnabled('habits-checklist') && (

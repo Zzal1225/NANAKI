@@ -22,10 +22,10 @@ interface PageHeaderProps {
   onAdd?: () => void
   backTo?: string
   actions?: ReactNode
-  /** 홈 등: 우측 커스텀 (달력/분석 토글) */
-  trailing?: ReactNode
-  /** 헤더 아래(구분선 밖) 월 선택 등 */
+  /** 헤더 중앙 — 월 선택 등 (타이틀 ↔ 우측 버튼) */
   children?: ReactNode
+  /** 헤더 아래 — 홈 달력/분석 토글 등 */
+  below?: ReactNode
 }
 
 function searchPathForTab(tab: TabId): string {
@@ -35,8 +35,8 @@ function searchPathForTab(tab: TabId): string {
 
 /**
  * 단일 행 헤더
- * - 홈: [Nanaki + 홈] [토글]
- * - 그 외: [탭 제목 + 홈] [검색 · 설정 · 추가]
+ * - [타이틀 + 홈] | [중앙: 월 선택] | [검색 · 설정 · 추가]
+ * - below: 구분선 아래 보조 컨트롤
  */
 export default function PageHeader({
   title,
@@ -48,8 +48,8 @@ export default function PageHeader({
   searchTo,
   backTo,
   actions,
-  trailing,
   children,
+  below,
 }: PageHeaderProps) {
   const navigate = useNavigate()
   const isHome = tab === 'home'
@@ -57,7 +57,7 @@ export default function PageHeader({
   return (
     <>
       <header className="sticky top-0 z-40 -mx-4 border-b border-border bg-surface/95 px-4 py-2.5 backdrop-blur-lg">
-        <div className="flex h-9 items-center justify-between gap-2">
+        <div className="grid h-9 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
           <div className="flex min-w-0 items-center gap-1.5">
             {backTo && (
               <Link
@@ -98,44 +98,40 @@ export default function PageHeader({
             </Link>
           </div>
 
-          <div className="flex min-w-0 shrink-0 items-center gap-1">
-            {trailing ? (
-              trailing
-            ) : (
-              <>
-                {!hideSearch && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(searchTo ?? searchPathForTab(tab))}
-                    className={headerIconBtnClass}
-                    title="검색"
-                    aria-label="검색"
-                  >
-                    <Search size={15} strokeWidth={2} />
-                  </button>
-                )}
-                <SectionSettings tab={isHome ? undefined : tab} compact />
-                {!hideAdd && (
-                  <button
-                    type="button"
-                    onClick={onAdd}
-                    disabled={!onAdd}
-                    className={`${headerAddBtnClass} disabled:cursor-not-allowed disabled:opacity-40`}
-                    title="추가"
-                    aria-label="추가"
-                  >
-                    <Plus size={15} strokeWidth={2.5} />
-                  </button>
-                )}
-                {actions}
-              </>
+          <div className="flex justify-center px-0.5">{children}</div>
+
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1">
+            {!hideSearch && (
+              <button
+                type="button"
+                onClick={() => navigate(searchTo ?? searchPathForTab(tab))}
+                className={headerIconBtnClass}
+                title="검색"
+                aria-label="검색"
+              >
+                <Search size={15} strokeWidth={2} />
+              </button>
             )}
+            <SectionSettings tab={isHome ? undefined : tab} compact />
+            {!hideAdd && (
+              <button
+                type="button"
+                onClick={onAdd}
+                disabled={!onAdd}
+                className={`${headerAddBtnClass} disabled:cursor-not-allowed disabled:opacity-40`}
+                title="추가"
+                aria-label="추가"
+              >
+                <Plus size={15} strokeWidth={2.5} />
+              </button>
+            )}
+            {actions}
           </div>
         </div>
       </header>
 
-      {children && (
-        <div className="flex items-center justify-center py-2.5">{children}</div>
+      {below && (
+        <div className="flex items-center justify-center py-1">{below}</div>
       )}
     </>
   )

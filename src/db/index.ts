@@ -115,7 +115,8 @@ export type NanakiDatabase = IDBPDatabase<NanakiDB>
 
 const DB_NAME = 'nanaki-db'
 export { DB_NAME }
-const DB_VERSION = 6
+/** 스토어 누락 시 재업그레이드용 — 스토어 추가 시 반드시 증가 */
+const DB_VERSION = 7
 
 let dbPromise: Promise<IDBPDatabase<NanakiDB>> | null = null
 
@@ -134,103 +135,97 @@ export function resolveExpenseMasterId(id: string) {
   return idx === -1 ? id : id.slice(0, idx)
 }
 
+/** upgrade 트랜잭션에서만 호출 — 없는 스토어·인덱스를 멱등 생성 */
+function ensureObjectStores(db: IDBPDatabase<NanakiDB>) {
+  if (!db.objectStoreNames.contains('budgetSettings')) {
+    const s = db.createObjectStore('budgetSettings', { keyPath: 'id' })
+    s.createIndex('by-month', 'month')
+  }
+  if (!db.objectStoreNames.contains('expenses')) {
+    const s = db.createObjectStore('expenses', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('bodyRecords')) {
+    const s = db.createObjectStore('bodyRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('archiveItems')) {
+    const s = db.createObjectStore('archiveItems', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+    s.createIndex('by-type', 'type')
+  }
+  if (!db.objectStoreNames.contains('habits')) {
+    db.createObjectStore('habits', { keyPath: 'id' })
+  }
+  if (!db.objectStoreNames.contains('habitLogs')) {
+    const s = db.createObjectStore('habitLogs', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+    s.createIndex('by-habit', 'habitId')
+  }
+  if (!db.objectStoreNames.contains('periodRecords')) {
+    const s = db.createObjectStore('periodRecords', { keyPath: 'id' })
+    s.createIndex('by-start', 'startDate')
+  }
+  if (!db.objectStoreNames.contains('bpRecords')) {
+    const s = db.createObjectStore('bpRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('sugarRecords')) {
+    const s = db.createObjectStore('sugarRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('sleepRecords')) {
+    const s = db.createObjectStore('sleepRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('hospitalRecords')) {
+    const s = db.createObjectStore('hospitalRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('exerciseRecords')) {
+    const s = db.createObjectStore('exerciseRecords', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('appSettings')) {
+    db.createObjectStore('appSettings', { keyPath: 'id' })
+  }
+  if (!db.objectStoreNames.contains('syncQueue')) {
+    const s = db.createObjectStore('syncQueue', { keyPath: 'id' })
+    s.createIndex('by-synced', 'synced')
+  }
+  if (!db.objectStoreNames.contains('syncConfig')) {
+    db.createObjectStore('syncConfig', { keyPath: 'id' })
+  }
+  if (!db.objectStoreNames.contains('bodyPhotos')) {
+    const s = db.createObjectStore('bodyPhotos', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+  }
+  if (!db.objectStoreNames.contains('supplementProducts')) {
+    db.createObjectStore('supplementProducts', { keyPath: 'id' })
+  }
+  if (!db.objectStoreNames.contains('supplementIntakeLogs')) {
+    const s = db.createObjectStore('supplementIntakeLogs', { keyPath: 'id' })
+    s.createIndex('by-date', 'date')
+    s.createIndex('by-product', 'productId')
+  }
+  if (!db.objectStoreNames.contains('lifeRoutines')) {
+    const s = db.createObjectStore('lifeRoutines', { keyPath: 'id' })
+    s.createIndex('by-nextDue', 'nextDueAt')
+    s.createIndex('by-group', 'group')
+  }
+  if (!db.objectStoreNames.contains('pantryItems')) {
+    const s = db.createObjectStore('pantryItems', { keyPath: 'id' })
+    s.createIndex('by-expires', 'expiresAt')
+    s.createIndex('by-name', 'name')
+  }
+}
+
 export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<NanakiDB>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        if (oldVersion < 1) {
-          if (!db.objectStoreNames.contains('budgetSettings')) {
-            const s = db.createObjectStore('budgetSettings', { keyPath: 'id' })
-            s.createIndex('by-month', 'month')
-          }
-          if (!db.objectStoreNames.contains('expenses')) {
-            const s = db.createObjectStore('expenses', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('bodyRecords')) {
-            const s = db.createObjectStore('bodyRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('archiveItems')) {
-            const s = db.createObjectStore('archiveItems', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-            s.createIndex('by-type', 'type')
-          }
-          if (!db.objectStoreNames.contains('habits')) {
-            db.createObjectStore('habits', { keyPath: 'id' })
-          }
-          if (!db.objectStoreNames.contains('habitLogs')) {
-            const s = db.createObjectStore('habitLogs', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-            s.createIndex('by-habit', 'habitId')
-          }
-        }
-        if (oldVersion < 2) {
-          if (!db.objectStoreNames.contains('periodRecords')) {
-            const s = db.createObjectStore('periodRecords', { keyPath: 'id' })
-            s.createIndex('by-start', 'startDate')
-          }
-          if (!db.objectStoreNames.contains('bpRecords')) {
-            const s = db.createObjectStore('bpRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('sugarRecords')) {
-            const s = db.createObjectStore('sugarRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('sleepRecords')) {
-            const s = db.createObjectStore('sleepRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('hospitalRecords')) {
-            const s = db.createObjectStore('hospitalRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('exerciseRecords')) {
-            const s = db.createObjectStore('exerciseRecords', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-          if (!db.objectStoreNames.contains('appSettings')) {
-            db.createObjectStore('appSettings', { keyPath: 'id' })
-          }
-        }
-        if (oldVersion < 3) {
-          if (!db.objectStoreNames.contains('syncQueue')) {
-            const s = db.createObjectStore('syncQueue', { keyPath: 'id' })
-            s.createIndex('by-synced', 'synced')
-          }
-          if (!db.objectStoreNames.contains('syncConfig')) {
-            db.createObjectStore('syncConfig', { keyPath: 'id' })
-          }
-        }
-        if (oldVersion < 4) {
-          if (!db.objectStoreNames.contains('bodyPhotos')) {
-            const s = db.createObjectStore('bodyPhotos', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-          }
-        }
-        if (oldVersion < 5) {
-          if (!db.objectStoreNames.contains('supplementProducts')) {
-            db.createObjectStore('supplementProducts', { keyPath: 'id' })
-          }
-          if (!db.objectStoreNames.contains('supplementIntakeLogs')) {
-            const s = db.createObjectStore('supplementIntakeLogs', { keyPath: 'id' })
-            s.createIndex('by-date', 'date')
-            s.createIndex('by-product', 'productId')
-          }
-        }
-        if (oldVersion < 6) {
-          if (!db.objectStoreNames.contains('lifeRoutines')) {
-            const s = db.createObjectStore('lifeRoutines', { keyPath: 'id' })
-            s.createIndex('by-nextDue', 'nextDueAt')
-            s.createIndex('by-group', 'group')
-          }
-          if (!db.objectStoreNames.contains('pantryItems')) {
-            const s = db.createObjectStore('pantryItems', { keyPath: 'id' })
-            s.createIndex('by-expires', 'expiresAt')
-            s.createIndex('by-name', 'name')
-          }
-        }
+      upgrade(db) {
+        // oldVersion과 무관하게 누락 스토어를 채움 (v6 고착 후 스토어 추가된 경우 대비)
+        ensureObjectStores(db)
       },
     })
   }
