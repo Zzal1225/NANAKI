@@ -137,9 +137,9 @@ function pieSegmentPath(cx: number, cy: number, r: number, start: number, end: n
 
 function shortCategoryLabel(name: string) {
   if (name === '남은 예산') return ''
-  // 슬래시 앞만 짧게
+  // 슬래시 앞만 짧게 (최대 5글자, 잘리면 …)
   const head = name.split('/')[0]
-  return head.length > 4 ? `${head.slice(0, 4)}` : head
+  return head.length > 5 ? `${head.slice(0, 5)}...` : head
 }
 
 type Segment = {
@@ -194,7 +194,7 @@ function SliceCallout({
         y={outer.y}
         textAnchor={onRight ? 'start' : 'end'}
         dominantBaseline="middle"
-        className="fill-text-secondary text-[9px] font-semibold"
+        className="fill-text-secondary text-[10px] font-semibold"
       >
         {short}
       </text>
@@ -372,7 +372,7 @@ function DonutChart({ budget, spent, slices, size = 168, colorMode = 'category' 
                   y={labelPos.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="pointer-events-none fill-surface text-[9px] font-semibold"
+                  className="pointer-events-none fill-surface text-[10px] font-semibold"
                   style={{ textShadow: '0 1px 2px rgba(0,0,0,0.45)' }}
                 >
                   {short}

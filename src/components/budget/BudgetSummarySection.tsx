@@ -49,7 +49,7 @@ export default function BudgetSummarySection({
           className="flex w-full flex-col gap-0.5 text-left active:opacity-80"
         >
           <div className="flex items-center justify-between gap-1">
-            <span className="text-xs text-text-muted">이번 달 지출</span>
+            <span className="text-xs text-text-muted">총 지출</span>
             <ChevronRight size={14} className="shrink-0 text-text-muted" />
           </div>
           {showTotalSpendEmpty ? (
@@ -81,12 +81,12 @@ export default function BudgetSummarySection({
       <div className="flex min-h-0 flex-col gap-2">
         <Card className="flex min-h-0 flex-1 flex-col gap-1">
           <TrendLine trend={zeroSpendTrend} />
-          <span className="text-xs text-text-muted">이달의 무지출 DAY</span>
+          <span className="text-xs text-text-muted">무지출 DAY</span>
           <span className={valueNeutral}>{zeroSpendDays}일</span>
         </Card>
         <Card className="flex min-h-0 flex-1 flex-col gap-1">
           <TrendLine trend={weekTrend} />
-          <span className="text-xs text-text-muted">이번 주 지출</span>
+          <span className="text-xs text-text-muted">이번 주 소비</span>
           {weekSpent === 0 ? (
             <span className="text-sm leading-snug text-text-muted">{emptySpendText}</span>
           ) : (

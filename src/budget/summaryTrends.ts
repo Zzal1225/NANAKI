@@ -8,13 +8,13 @@ import {
   subWeeks,
 } from 'date-fns'
 import type { Expense } from '../types'
-import { countMonthZeroSpendDays, sumThisWeekSpend } from './noSpend'
-import { shiftMonth } from '../utils/dates'
+import { formatCurrency, shiftMonth } from '../utils/dates'
+import { countMonthZeroSpendDays, sumWeekVariableSpend } from './noSpend'
 
 export type TrendDirection = 'up' | 'down' | 'flat'
 
-export type PercentTrend = {
-  kind: 'percent'
+export type AmountTrend = {
+  kind: 'amount'
   direction: TrendDirection
   value: number
   label: string
@@ -35,7 +35,7 @@ export type UnavailableTrend = {
   label: string
 }
 
-export type SummaryTrend = PercentTrend | DaysTrend | UnavailableTrend
+export type SummaryTrend = AmountTrend | DaysTrend | UnavailableTrend
 
 const NO_COMPARE_LABEL = '비교할 데이터 없음'
 
@@ -49,6 +49,11 @@ function directionFromDelta(delta: number): TrendDirection {
   return 'flat'
 }
 
+function formatAmountDelta(delta: number) {
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${formatCurrency(delta)}`
+}
+
 function monthHasSpendData(expenses: Expense[], month: string) {
   return expenses.some((e) => e.date.startsWith(month) && e.amount > 0)
 }
@@ -56,24 +61,25 @@ function monthHasSpendData(expenses: Expense[], month: string) {
 function weekHasSpendData(expenses: Expense[], weekRef: Date) {
   const from = format(startOfWeek(weekRef, { weekStartsOn: 1 }), 'yyyy-MM-dd')
   const to = format(endOfWeek(weekRef, { weekStartsOn: 1 }), 'yyyy-MM-dd')
-  return expenses.some((e) => e.date >= from && e.date <= to && e.amount > 0)
+  return expenses.some(
+    (e) => e.type === 'variable' && e.date >= from && e.date <= to && e.amount > 0,
+  )
 }
 
-/** 지출액 지난달 대비 % — previous에 실제 지출이 있을 때만 */
-export function spendPercentTrend(current: number, previous: number): PercentTrend | null {
+/** 지출액 지난 달 대비 금액 — previous에 실제 지출이 있을 때만 */
+export function spendAmountTrend(current: number, previous: number): AmountTrend | null {
   if (previous <= 0) return null
-  const pct = Math.round(((current - previous) / previous) * 100)
-  const direction = directionFromDelta(pct)
-  const sign = pct > 0 ? '+' : ''
+  const delta = current - previous
+  const direction = directionFromDelta(delta)
   return {
-    kind: 'percent',
+    kind: 'amount',
     direction,
-    value: pct,
-    label: `지난달 대비 ${sign}${pct}%`,
+    value: delta,
+    label: `지난 달 대비 ${formatAmountDelta(delta)}`,
   }
 }
 
-/** 무지출 일수 지난달(동일 기간) 대비 */
+/** 무지출 일수 지난 달(동일 기간) 대비 */
 export function zeroSpendDaysTrend(current: number, previous: number): DaysTrend | null {
   const delta = current - previous
   const direction = directionFromDelta(delta)
@@ -82,21 +88,20 @@ export function zeroSpendDaysTrend(current: number, previous: number): DaysTrend
     kind: 'days',
     direction,
     value: delta,
-    label: `지난달보다 ${sign}${delta}일`,
+    label: `지난 달보다 ${sign}${delta}일`,
   }
 }
 
-/** 이번 주 vs 지난 주 지출 */
-export function weekSpendTrend(current: number, previous: number): PercentTrend | null {
+/** 이번 주 vs 지난 주 소비(변동만) — 금액 차 */
+export function weekSpendTrend(current: number, previous: number): AmountTrend | null {
   if (previous <= 0) return null
-  const pct = Math.round(((current - previous) / previous) * 100)
-  const direction = directionFromDelta(pct)
-  const sign = pct > 0 ? '+' : ''
+  const delta = current - previous
+  const direction = directionFromDelta(delta)
   return {
-    kind: 'percent',
+    kind: 'amount',
     direction,
-    value: pct,
-    label: `전주 대비 ${sign}${pct}%`,
+    value: delta,
+    label: `지난 주 대비 ${formatAmountDelta(delta)}`,
   }
 }
 
@@ -105,9 +110,9 @@ export function sumMonthSpend(expenses: Expense[], month: string) {
 }
 
 /**
- * 지난달 동일 구간 무지출 일수
- * - 이번 달이면 1일~오늘과 같은 일수만큼 지난달에서 집계
- * - 과거 달이면 해당 월 전체 vs 지난달 전체
+ * 지난 달 동일 구간 무지출 일수
+ * - 이번 달이면 1일~오늘과 같은 일수만큼 지난 달에서 집계
+ * - 과거 달이면 해당 월 전체 vs 지난 달 전체
  */
 export function countComparableZeroSpendDays(
   viewMonth: string,
@@ -131,7 +136,7 @@ export function countComparableZeroSpendDays(
 }
 
 export function sumPreviousWeekSpend(expenses: Expense[], today: Date = new Date()) {
-  return sumThisWeekSpend(expenses, subWeeks(today, 1))
+  return sumWeekVariableSpend(expenses, subWeeks(today, 1))
 }
 
 export function buildSummaryTrends(params: {
@@ -149,18 +154,22 @@ export function buildSummaryTrends(params: {
 } {
   const prevMonth = shiftMonth(params.month, -1)
   const todayDate = parseISO(params.today)
+  const isCurrentMonth = params.month === params.today.slice(0, 7)
   const hasPrevMonth = monthHasSpendData(params.prevMonthExpenses, prevMonth)
-  const hasPrevWeek = weekHasSpendData(params.allExpenses, subWeeks(todayDate, 1))
+  const hasPrevWeek =
+    isCurrentMonth && weekHasSpendData(params.allExpenses, subWeeks(todayDate, 1))
+
+  const weekTrend = hasPrevWeek
+    ? weekSpendTrend(params.weekSpent, sumPreviousWeekSpend(params.allExpenses, todayDate)) ??
+      unavailableTrend()
+    : unavailableTrend()
 
   if (!hasPrevMonth) {
     const none = unavailableTrend()
     return {
       spendTrend: none,
       zeroSpendTrend: none,
-      weekTrend: hasPrevWeek
-        ? weekSpendTrend(params.weekSpent, sumPreviousWeekSpend(params.allExpenses, todayDate)) ??
-          unavailableTrend()
-        : unavailableTrend(),
+      weekTrend,
     }
   }
 
@@ -170,13 +179,10 @@ export function buildSummaryTrends(params: {
     params.prevMonthExpenses,
     params.today,
   )
-  const prevWeek = sumPreviousWeekSpend(params.allExpenses, todayDate)
 
   return {
-    spendTrend: spendPercentTrend(params.totalSpent, prevTotal) ?? unavailableTrend(),
+    spendTrend: spendAmountTrend(params.totalSpent, prevTotal) ?? unavailableTrend(),
     zeroSpendTrend: zeroSpendDaysTrend(params.zeroSpendDays, prevZero) ?? unavailableTrend(),
-    weekTrend: hasPrevWeek
-      ? weekSpendTrend(params.weekSpent, prevWeek) ?? unavailableTrend()
-      : unavailableTrend(),
+    weekTrend,
   }
 }

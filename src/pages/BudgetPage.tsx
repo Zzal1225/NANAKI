@@ -15,7 +15,6 @@ import {
   type SummaryView,
 } from '../budget/budgetPageTypes'
 import MonthNav from '../components/layout/MonthNav'
-import { maxBudgetMonth } from '../utils/dates'
 import { useMonthScope } from '../hooks/useMonthScope'
 import { getBudgetDataStartMonth } from '../utils/dataStartMonth'
 import {
@@ -40,9 +39,8 @@ import BudgetCategorySection from '../components/budget/BudgetCategorySection'
 export default function BudgetPage() {
   const { isSectionEnabled } = useSections()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { month, setMonth, minMonth } = useMonthScope({
+  const { month, setMonth, minMonth, maxMonth } = useMonthScope({
     getStartMonth: getBudgetDataStartMonth,
-    maxMonth: maxBudgetMonth(),
   })
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [editExpense, setEditExpense] = useState<UserOwnedInput<Expense> | null>(null)
@@ -122,7 +120,7 @@ export default function BudgetPage() {
   const showBudgetSuggest = stats.totalBudget === 0 && prevHasBudget && !budgetSuggestDismissed
 
   const zeroSpendDays = countMonthZeroSpendDays(month, expenses, today)
-  const weekSpent = sumThisWeekSpend(allExpenses)
+  const weekSpent = sumThisWeekSpend(allExpenses, month)
   const trends = buildSummaryTrends({
     month,
     today,
@@ -165,7 +163,7 @@ export default function BudgetPage() {
           month={month}
           onChange={setMonth}
           minMonth={minMonth}
-          maxMonth={maxBudgetMonth()}
+          maxMonth={maxMonth}
         />
       </PageHeader>
 

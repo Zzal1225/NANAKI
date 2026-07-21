@@ -37,6 +37,17 @@ export default function BudgetCategorySection({
 }: BudgetCategorySectionProps) {
   return (
     <section>
+      <Card className="mb-4">
+        <BudgetOverview
+          budget={chartBudget}
+          spent={chartSpent}
+          categorySpends={chartCategorySpends}
+          legendCategories={legendCategories}
+          hasUnsetBudgetCategories={hasUnsetBudgetCategories}
+          onOpenBudgetSettings={onOpenCategorySettings}
+        />
+      </Card>
+
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-text-secondary">카테고리별 예산</h2>
         <button
@@ -47,16 +58,7 @@ export default function BudgetCategorySection({
           <Settings size={16} />
         </button>
       </div>
-      <Card className="mb-3">
-        <BudgetOverview
-          budget={chartBudget}
-          spent={chartSpent}
-          categorySpends={chartCategorySpends}
-          legendCategories={legendCategories}
-          hasUnsetBudgetCategories={hasUnsetBudgetCategories}
-          onOpenBudgetSettings={onOpenCategorySettings}
-        />
-      </Card>
+
       <div className="flex flex-col gap-2">
         {budgetCategories.map((cat) => {
           const catExpenses = filterCategoryExpenses(expenses, cat)
