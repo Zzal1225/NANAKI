@@ -1,14 +1,16 @@
 /**
- * 생활 알림 (MVP)
- * - Notification API — 앱이 열려 있을 때
- * - 오늘 반복 예정/초과 · 냉장고 임박/폐기 요약
- * - 오전 9시 예약 (지나지 않았을 때) 또는 즉시
+ * 생활 알림 (MVP · 로컬 보조 채널)
+ * - 주 채널: 홈「오늘 할 일」— docs/NOTIFICATIONS.md
+ * - 앱이 열려 있을 때 오전 9시(또는 진입 시) 요약 Notification
  */
 
 import type { LifeRoutine, PantryItem } from '../types'
 import { getPantryStatus } from './pantryStatus'
 import { todayISO } from '../utils/dates'
-import { ensureNotificationPermission } from '../supplements/alarms'
+import {
+  ensureNotificationPermission,
+  showLocalNotification,
+} from '../notifications/localNotify'
 
 export { ensureNotificationPermission }
 
@@ -65,14 +67,13 @@ export function scheduleLifeReminders(routines: LifeRoutine[], pantryItems: Pant
 
   const delay = fireAt.getTime() - now.getTime()
   const run = () => {
-    new Notification('생활 알림', { body, tag: key })
+    showLocalNotification('생활 알림', { body, tag: key })
     pendingAlarms.delete(key)
   }
 
   if (delay > 0) {
     pendingAlarms.set(key, setTimeout(run, delay))
   } else {
-    // 이미 오전 9시 이후 — 페이지 진입 시 한 번 (짧은 딜레이)
     pendingAlarms.set(key, setTimeout(run, 1500))
   }
 }

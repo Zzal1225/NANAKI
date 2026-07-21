@@ -1,20 +1,19 @@
 /**
- * 영양제 알람 (MVP)
- * - Notification API 권한 요청
- * - 오늘 남은 슬롯의 alarmTime에 맞춰 setTimeout (앱이 열려 있을 때만)
- * - 백그라운드 푸시는 PWA SW 연동 후 확장
+ * 영양제 알람 (MVP · 로컬 보조 채널)
+ * - 주 채널: 홈「오늘 할 일」— docs/NOTIFICATIONS.md
+ * - 앱이 열려 있을 때만 alarmTime 기준 setTimeout + Notification
+ * - 백그라운드 푸시는 src/notifications/push (추후 FCM)
  */
 
 import type { SupplementProduct } from '../types'
 import { getActiveSupplements, formatScheduleLabel, scheduleKey } from './nutrients'
 import { todayISO } from '../utils/dates'
+import {
+  ensureNotificationPermission,
+  showLocalNotification,
+} from '../notifications/localNotify'
 
-export async function ensureNotificationPermission(): Promise<NotificationPermission> {
-  if (!('Notification' in window)) return 'denied'
-  if (Notification.permission === 'granted') return 'granted'
-  if (Notification.permission === 'denied') return 'denied'
-  return Notification.requestPermission()
-}
+export { ensureNotificationPermission }
 
 type AlarmHandle = ReturnType<typeof setTimeout>
 
@@ -47,7 +46,7 @@ export function scheduleTodayAlarms(products: SupplementProduct[]) {
 
       const key = `${product.id}|${scheduleKey(slot, index)}`
       const handle = setTimeout(() => {
-        new Notification('영양제 복용', {
+        showLocalNotification('영양제 복용', {
           body: `${product.name} · ${formatScheduleLabel(slot)}`,
           tag: key,
         })
